@@ -94,6 +94,10 @@ function UserDetail({ id, viewerOwner, onChanged, close }) {
   const setRole = admin => api('/api/admin/user/role', { method: 'POST', body: JSON.stringify({ id: u.id, admin }) })
     .then(() => { toast(admin ? u.name + ' is an admin now' : u.name + ' is no longer an admin'); onChanged(); close() })
     .catch(e => toast(e.message))
+  // Trainers (api/trainer.js) see their students and send them plans.
+  const setTrainer = trainer => api('/api/admin/user/trainer', { method: 'POST', body: JSON.stringify({ id: u.id, trainer }) })
+    .then(() => { toast(trainer ? u.name + ' is a trainer now' : u.name + ' is no longer a trainer'); onChanged(); close() })
+    .catch(e => toast(e.message))
   const makeOwner = () => confirmSheet({
     title: 'Make ' + u.name + ' the owner?',
     message: 'They get everything you can do here, including removing admins and clearing the activity log. You stay an admin, but only they can change that.',
@@ -146,6 +150,11 @@ function UserDetail({ id, viewerOwner, onChanged, close }) {
       <div className="tile"><div className="l">Routines</div><div className="v v-sm">{d.routines.length}</div></div>
       <div className="tile"><div className="l">Last sync</div><div className="v" style={{ fontSize: 'var(--fs-subhead)' }}>{rel(d.lastSync)}</div></div>
     </div>
+    {!u.disabled && <>
+      <button className="btn" style={{ margin: '12px 0 4px' }} onClick={() => setTrainer(!u.trainer)}>
+        {u.trainer ? 'Remove trainer' : 'Make trainer'}</button>
+      <div className="adm-hint">{u.trainer ? 'They see the students who joined with their invite codes and send them plans.' : 'A trainer invites students and sends them plans.'}</div>
+    </>}
     {viewerOwner && !u.owner && !u.disabled && <>
       <button className="btn" style={{ margin: '12px 0 4px' }}
         onClick={() => u.admin

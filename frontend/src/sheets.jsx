@@ -2829,12 +2829,13 @@ export function importPlanFile(f, onRead) {
   rd.readAsText(f)
 }
 
-export const planImportSheet = bundle => ui().openSheet(close => <PlanImport bundle={bundle} close={close} />)
+export const planImportSheet = (bundle, onApplied) => ui().openSheet(close => <PlanImport bundle={bundle} close={close} onApplied={onApplied} />)
 
-function PlanImport({ bundle, close }) {
+function PlanImport({ bundle, close, onApplied }) {
   const [schedule, setSchedule] = useState(false)
   const apply = () => {
     update(s => mergePlan(s, bundle, { schedule }))
+    onApplied?.()
     close()
     toast(tn('Added {0} routine to your plan', 'Added {0} routines to your plan', bundle.routineCount))
     nav('/plan')

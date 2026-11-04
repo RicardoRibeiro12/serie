@@ -42,6 +42,8 @@ import { ipv6Groups, guardedLookup, pushEndpointError, MAX_PUSH_ENDPOINT } from 
 import { createIntegrations } from './integrations/index.js';
 import { integrationRoutes } from './integrations/routes.js';
 import { excusedOn, nudgeFor, nudgeWindowOpen, toneOf } from './nudge.js';
+import { verifyEdgeSignature, edgeClientIp } from './edge-proxy.js';
+import { isTrainer, studentsOf, offerFor, makeOffer, putOffer, dropOffer, forgetUser, makeAssessment, assessmentsFor, dropAssessments } from './trainer.js';
 import { wrappedPushYear, wrappedSummary, wrappedPushOwed, wrappedPush } from './wrapped.js';
 
 const PORT = +(process.env.PORT || 3000);
@@ -94,6 +96,9 @@ const DEFAULT_LANG = (() => {
 // sign-in throttle asks (limitAddress below); the bundled compose file sets it, because the API
 // is reachable there only through the web container, which overwrites those headers.
 const TRUST_PROXY = /^(1|true|yes|on)$/i.test(process.env.TRUST_PROXY || '');
+// Netlify's signing secret (edge-proxy.js). Set: only requests Netlify signed get in, and its
+// client-address header is the one the throttle and the log use.
+const EDGE_PROXY_SECRET = process.env.EDGE_PROXY_SECRET || '';
 // 90 days keeps someone who trains a few times a week permanently signed in without a stolen
 // cookie staying good for a year. Overridable because a family instance and one on the open
 // internet don't want the same number. Only affects cookies minted from now on — the expiry is
@@ -157,7 +162,9 @@ db.users = db.users || [];
 db.creds = db.creds || [];
 db.subs = db.subs || [];
 db.invites = db.invites || [];
-db.deviceLinks = db.deviceLinks || [];   // unused one-time device links, hashed (device-link.js)
+db.deviceLinks = db.deviceLinks || [];
+db.planOffers = db.planOffers || [];   // plans a trainer sent, waiting for the student (trainer.js)
+db.assessments = db.assessments || [];   // a trainer's check-in measurements, waiting for the student's app   // unused one-time device links, hashed (device-link.js)
 const isAdmin = user => !!user && (user.admin === true || ADMIN_UIDS.includes(user.id));
 // One owner per instance, any number of admins. Admins run the place day to day (users, invites,
 // the Coach); the owner is the one admin the others cannot act on: only the owner appoints or
@@ -923,7 +930,8 @@ let auditCount = 0;
 // one source from another, not enough to point at a person.
 function clientIp(req) {
   if (AUDIT_IP === 'off') return null;
-  const raw = String(req.headers['cf-connecting-ip'] || '').trim()
+  const raw = (EDGE_PROXY_SECRET ? edgeClientIp(req) : '')
+    || String(req.headers['cf-connecting-ip'] || '').trim()
     || String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()
     || String(req.headers['x-real-ip'] || '').trim()
     // Nothing in front at all: the socket peer is the client, and it cannot be forged. Behind
@@ -1067,7 +1075,8 @@ const THROTTLED = {
 function limitAddress(req) {
   const sock = String(req.socket?.remoteAddress || '');
   let raw = sock;
-  if (TRUST_PROXY) {
+  if (EDGE_PROXY_SECRET) raw = edgeClientIp(req) || sock;
+  else if (TRUST_PROXY) {
     const xff = String(req.headers['x-forwarded-for'] || '').split(',').map(v => v.trim()).filter(Boolean);
     raw = String(req.headers['cf-connecting-ip'] || '').trim() || xff[xff.length - 1]
       || String(req.headers['x-real-ip'] || '').trim() || sock;
@@ -1191,7 +1200,7 @@ function loginTarget(body) {
 }
 const acctKey = u => 'acct:' + u.id;
 const passkeyCount = u => db.creds.filter(c => c.userId === u.id).length;
-const publicUser = u => ({ id: u.id, name: u.name, admin: isAdmin(u), ...(isOwner(u) ? { owner: true } : {}) });
+const publicUser = u => ({ id: u.id, name: u.name, admin: isAdmin(u), ...(isOwner(u) ? { owner: true } : {}), ...(isTrainer(u) ? { trainer: true } : {}) });
 const POLICY_ERRORS = {
   'too-short': `the password needs at least ${MIN_LENGTH} characters`,
   'too-long': `the password can have at most ${MAX_LENGTH} characters`,
@@ -1337,6 +1346,7 @@ async function removeEmail(req, res, user, body) {
 // credential and their photos and videos. The admin's delete and the account's own both end here.
 function removeAccount(u) {
   db.users = db.users.filter(x => x.id !== u.id);
+  forgetUser(db, u.id);
   db.creds = (db.creds || []).filter(c => c.userId !== u.id);
   db.subs = (db.subs || []).filter(x => x.userId !== u.id);
   dropDeviceLinks(db, u.id);
@@ -1442,6 +1452,10 @@ const passwordRoutes = {
         audit(req, 'auth.register.fail', { ok: false, name, msg: 'invite-invalid' });
         return json(res, 403, { error: 'invite code is no longer valid, ask for a new one', code: 'invite' });
       }
+    } else {
+      // An open instance has no use for invites, except a trainer's: it makes the profile their student.
+      const t = invite();
+      if (t && t.trainerId) inv = t;
     }
     if (nameTaken(name)) {
       // No name in the row: it is an address, and the log keeps none (maskEmail is for owners).
@@ -1452,7 +1466,7 @@ const passwordRoutes = {
     if (email && emailTaken(email)) return emailRefused();
     const created = new Date().toISOString();
     const user = { id: crypto.randomBytes(12).toString('base64url'), name, created, pw: { h, set: created }, ...(email ? { email } : {}) };
-    if (inv) { user.invitedBy = inv.code; inv.usedBy = user.id; inv.usedAt = created; }
+    if (inv) { user.invitedBy = inv.code; inv.usedBy = user.id; inv.usedAt = created; if (inv.trainerId) user.trainerId = inv.trainerId; }
     claimFirstAdmin(req, user);
     db.users.push(user);
     saveDb();
@@ -2194,9 +2208,12 @@ const routes = {
         audit(req, 'auth.register.fail', { ok: false, name: c.name, msg: 'invite-invalid' });
         return json(res, 403, { error: 'invite code is no longer valid, ask for a new one', code: 'invite' });
       }
+    } else {
+      const t = db.invites.find(i => i.code === c.code && !i.usedBy && !i.revoked);
+      if (t && t.trainerId) invite = t;
     }
     const user = { id: c.uid, name: c.name, created: new Date().toISOString() };
-    if (invite) { user.invitedBy = invite.code; invite.usedBy = user.id; invite.usedAt = user.created; }
+    if (invite) { user.invitedBy = invite.code; invite.usedBy = user.id; invite.usedAt = user.created; if (invite.trainerId) user.trainerId = invite.trainerId; }
     claimFirstAdmin(req, user);
     db.users.push(user);
     db.creds.push({
@@ -2767,6 +2784,7 @@ const routes = {
       return {
         id: u.id, name: u.name, created: u.created || null,
         disabled: !!u.disabled, admin: isAdmin(u), owner: isOwner(u), invitedBy: u.invitedBy || null,
+        trainer: isTrainer(u), trainerId: u.trainerId || null,
         workouts: workouts.length,
         lastWorkout: last ? last.d : null,
         lastSync: lastSyncOf(u, S),
@@ -2932,6 +2950,141 @@ const routes = {
     json(res, 200, { ok: true });
   },
 
+  /* ---------- trainers (trainer.js) ---------- */
+  // An admin makes a profile a trainer, or links a student to one (trainerId null unlinks).
+  'POST /api/admin/user/trainer': async (req, res) => {
+    const admin = requireAdmin(req, res); if (!admin) return;
+    const body = await readBody(req);
+    const u = db.users.find(x => x.id === body.id);
+    if (!u) return json(res, 404, { error: 'no such user' });
+    if (body.trainer !== undefined) {
+      if (typeof body.trainer !== 'boolean') return json(res, 400, { error: 'trainer must be true or false' });
+      if (body.trainer) u.trainer = true; else delete u.trainer;
+    }
+    if (body.trainerId !== undefined) {
+      if (body.trainerId === null) delete u.trainerId;
+      else {
+        const t = db.users.find(x => x.id === body.trainerId);
+        if (!isTrainer(t) || t.id === u.id) return json(res, 400, { error: 'that profile is not a trainer' });
+        u.trainerId = t.id;
+      }
+    }
+    saveDb();
+    audit(req, 'admin.trainer', { user: admin, target: u });
+    json(res, 200, { ok: true, id: u.id, trainer: isTrainer(u), trainerId: u.trainerId || null });
+  },
+
+  'GET /api/trainer/students': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    if (!isTrainer(me)) return json(res, 403, { error: 'forbidden' });
+    const students = studentsOf(db, me).map(u => {
+      const S = readState(u.id) || {};
+      const workouts = records(S.workouts);
+      const last = workouts[workouts.length - 1];
+      const offer = offerFor(db, u.id);
+      // The latest weigh-in and body-fat reading, for the trainer's overview of the check-ins.
+      const bw = records(S.bodyweight).filter(e => e && e.d && Number(e.w) > 0).sort((a, b) => a.d.localeCompare(b.d)).pop();
+      const bf = records(S.measurements).filter(e => e && e.d && Number(e.bodyFat) > 0).sort((a, b) => a.d.localeCompare(b.d)).pop();
+      return {
+        id: u.id, name: u.name, workouts: workouts.length, lastWorkout: last ? last.d : null,
+        unit: S.unit === 'lb' ? 'lb' : 'kg',
+        weight: bw ? { d: bw.d, w: Number(bw.w) } : null,
+        bodyFat: bf ? { d: bf.d, v: Number(bf.bodyFat) } : null,
+        pending: offer && offer.from === me.id ? { name: offer.name, at: offer.at } : null,
+        pendingAssessments: assessmentsFor(db, u.id).length
+      };
+    });
+    json(res, 200, { students });
+  },
+
+  // An invite whose profile becomes this trainer's student.
+  'POST /api/trainer/invites/new': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    if (!isTrainer(me)) return json(res, 403, { error: 'forbidden' });
+    const body = await readBody(req);
+    let code;
+    do { code = crypto.randomBytes(8).toString('hex').toUpperCase(); } while (db.invites.some(i => i.code === code));
+    const invite = { code, note: text(body.note).slice(0, 60), createdBy: me.id, trainerId: me.id, created: new Date().toISOString() };
+    db.invites.push(invite);
+    saveDb();
+    audit(req, 'trainer.invite.create', { user: me, msg: code });
+    json(res, 200, { invite });
+  },
+
+  'POST /api/trainer/plan': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    if (!isTrainer(me)) return json(res, 403, { error: 'forbidden' });
+    const body = await readBody(req);
+    const student = db.users.find(x => x.id === body.studentId);
+    const made = makeOffer({ trainer: me, student, plan: body.plan, name: body.name, id: crypto.randomBytes(9).toString('base64url') });
+    if (made.error) return json(res, made.error === 'not your student' ? 404 : 400, { error: made.error });
+    putOffer(db, made.offer);
+    saveDb();
+    audit(req, 'trainer.plan.send', { user: me, target: student, msg: made.offer.name });
+    json(res, 200, { ok: true, id: made.offer.id });
+  },
+
+  // A check-in the trainer measured (trainer.js makeAssessment): stored until the student's app
+  // folds it into their weigh-ins and measurements.
+  'POST /api/trainer/assessment': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    if (!isTrainer(me)) return json(res, 403, { error: 'forbidden' });
+    const body = await readBody(req);
+    const student = db.users.find(x => x.id === body.studentId);
+    if (student && assessmentsFor(db, student.id).length >= 50) return json(res, 400, { error: 'too many check-ins waiting for this student' });
+    const made = makeAssessment({ trainer: me, student, date: body.date, weight: body.weight, values: body.values, note: body.note, id: crypto.randomBytes(9).toString('base64url') });
+    if (made.error) return json(res, made.error === 'not your student' ? 404 : 400, { error: made.error });
+    db.assessments.push(made.assessment);
+    saveDb();
+    audit(req, 'trainer.assessment', { user: me, target: student, msg: made.assessment.date });
+    json(res, 200, { ok: true, id: made.assessment.id });
+  },
+
+  'GET /api/assessments': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    const list = assessmentsFor(db, me.id).map(a => {
+      const from = db.users.find(u => u.id === a.from);
+      return { id: a.id, date: a.date, weight: a.weight ?? null, values: a.values, note: a.note || null, from: from ? from.name : null };
+    });
+    json(res, 200, { assessments: list });
+  },
+
+  // The app merged them into the profile's own history.
+  'POST /api/assessments/done': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    const ids = Array.isArray(body.ids) ? body.ids.map(text).filter(Boolean).slice(0, 100) : [];
+    const n = dropAssessments(db, me.id, ids);
+    if (n) saveDb();
+    json(res, 200, { ok: true, removed: n });
+  },
+
+  // The student's side: the plan their trainer sent, if one is waiting.
+  'GET /api/plan-offer': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    const o = offerFor(db, me.id);
+    if (!o) return json(res, 200, { offer: null });
+    const from = db.users.find(u => u.id === o.from);
+    json(res, 200, { offer: { id: o.id, name: o.name, at: o.at, from: from ? from.name : null, plan: JSON.parse(o.plan) } });
+  },
+
+  // Accepted (the app merged it) or dismissed: either way it is gone.
+  'POST /api/plan-offer/done': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    if (!dropOffer(db, me.id, text(body.id))) return json(res, 404, { error: 'no such plan' });
+    saveDb();
+    json(res, 200, { ok: true });
+  },
+
   /* ---------- activity log ---------- */
   // Newest first, paged by id. Not by offset: the log grows at the front of this view, so an
   // offset cursor would repeat a row whenever an event lands between two pages; and not by
@@ -3031,6 +3184,12 @@ const APP_ORIGINS = new Set(['https://localhost', 'capacitor://localhost', 'http
 
 const server = http.createServer(async (req, res) => {
   bodyDeadline(req);
+  // Behind Netlify, anything it did not sign came straight to this address. The health check is
+  // the platform's own, from inside, and says nothing about anyone.
+  if (EDGE_PROXY_SECRET && !(req.method === 'GET' && req.url === '/api/health')
+    && !verifyEdgeSignature(req.headers['x-nf-sign'], EDGE_PROXY_SECRET)) {
+    return json(res, 403, { error: 'forbidden' });
+  }
   // Same-origin (the deployed nginx-proxied web app) never triggers CORS, so this only matters
   // for the paired mobile app calling in from its own WebView origin. It carries no cookie
   // (auth is the Authorization header instead), so Allow-Credentials is deliberately never set —

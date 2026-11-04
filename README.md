@@ -1,3 +1,23 @@
+# Série
+
+A fork of [openGym](https://github.com/DuarteSantos8/openGym) for personal trainers and their
+students. What this fork adds:
+
+- **Trainers**: a trainer invites students with a code, sends them a plan (the openGym plan file),
+  and records check-ins (weight, body fat, tape measurements) that land in the student's history.
+- **A public site** in front of the app (`landing/`), with its own SEO, and the app under `/app/`.
+- **Deployment** on Netlify (site and app) and Fly.io (API), with the API reachable only through
+  Netlify's signed proxy. See [DEPLOY.md](DEPLOY.md).
+- Its own look (warm black, signal orange, condensed type) and pt-PT and English for now.
+
+Licence: AGPL-3.0-or-later, like openGym. The exercise media are Gym visual's, licensed to
+openGym, and not covered by the AGPL: read [NOTICE.md](NOTICE.md) before reusing anything in
+`catalogue/media/`. This fork is non-commercial.
+
+The original openGym README follows.
+
+---
+
 <div align="center">
 
 <p>

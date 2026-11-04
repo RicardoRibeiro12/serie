@@ -123,7 +123,7 @@ export default defineConfig({
   // app follows the same floor. Vite's own default is Safari 16.4: syntax newer than 15.5 went out
   // unlowered and one regex lookbehind kept 1.4.2 on its splash there. What the transpiler cannot
   // lower, scripts/check-bundle-syntax.mjs catches (its test builds the bundle).
-  build: { chunkSizeWarningLimit: 1500, target: ['safari15', 'chrome100', 'firefox100', 'edge100'] },
+  build: { sourcemap: false, chunkSizeWarningLimit: 1500, target: ['safari15', 'chrome100', 'firefox100', 'edge100'] },
   // Gives happy-dom tests a working localStorage on Node 24+ (#733).
   test: { setupFiles: ['./src/test-setup.js'] }
 })

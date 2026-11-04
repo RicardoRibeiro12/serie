@@ -7,7 +7,7 @@ import { bindUI } from './components/ui.jsx'
 import { setWeightDecimals } from './lib/format.js'
 import { accentValue, applyAccent } from './lib/accent.js'
 import { seasonAccent } from './lib/seasonal.js'
-import { setLang, useLang, baseLang } from './lib/i18n.js'
+import { t, setLang, useLang, baseLang, offeredLang } from './lib/i18n.js'
 import { effectiveLang } from './lib/default-lang.js'
 import { setPlayOnSilent, setVibrate, setAlarmBuzzer, setNativeBuzzer } from './lib/sound.js'
 import { buzzAsAlarm } from './lib/rest-alert.js'
@@ -74,7 +74,16 @@ function lazyView(load) {
     return View ? <View {...props} /> : <Suspense fallback={null}><Lazy {...props} /></Suspense>
   }
 }
+const PAGE_TITLES = [
+  ['/plan', () => t('Plan')], ['/workout', () => t('Workout')], ['/stats', () => t('Stats')],
+  ['/history', () => t('History')], ['/library', () => t('Exercises')], ['/muscles', () => t('Muscles')],
+  ['/structural-balance', () => t('Structural balance')], ['/progress-photos', () => t('Progress photos')],
+  ['/measurements', () => t('Body measurements')], ['/checkin', () => t('Check in')], ['/settings', () => t('Settings')],
+  ['/coach', () => t('Coach')], ['/admin', () => t('Admin dashboard')], ['/trainer', () => t('Students')]
+]
+const pageTitle = path => (PAGE_TITLES.find(([p]) => path === p || path.startsWith(p + '/'))?.[1] || (() => t('Home')))()
 const Admin = lazyView(() => import('./views/Admin.jsx'))
+const Trainer = lazyView(() => import('./views/Trainer.jsx'))
 const CoachChat = lazyView(() => import('./views/CoachChat.jsx'))
 const Measurements = lazyView(() => import('./views/Measurements.jsx'))
 const CoachIntake = lazyView(() => import('./views/CoachIntake.jsx'))
@@ -176,7 +185,7 @@ function Shell() {
   // A profile that never picked a language follows the instance default or the browser (#303) —
   // worked out here, on this device, and never written into the synced state (lib/default-lang.js).
   const config = useStore(s => s.config)
-  const lang = effectiveLang(S, config)
+  const lang = offeredLang(effectiveLang(S, config))
   useEffect(() => { setLang(lang, S.enParens?.[baseLang(lang)] ?? true, S.enOnly?.[baseLang(lang)] === true) }, [lang, S.enParens, S.enOnly])
   // Same shape as the language: a module-level display setting, pushed when it changes (#139).
   useEffect(() => { setWeightDecimals(S.wdec) }, [S.wdec])
@@ -322,6 +331,8 @@ function Shell() {
   }, [setupDone, S])
   // The boot screen in index.html covers the start; it goes once there is something to show.
   useEffect(() => { if (ready || authed) hideBoot() }, [ready, authed])
+  // Every screen names its own tab: "Plano · Série", "Treino · Série" (one title per page).
+  useEffect(() => { document.title = (authed ? pageTitle(loc.pathname) : t('Sign in')) + ' · Série' }, [loc.pathname, langV, authed])
   if (!ready && !authed) return (
     <div id="app">
       <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
@@ -358,6 +369,7 @@ function Shell() {
       {isOn(S, 'coach') && <Route path="/coach/proposal" element={<Navigate to="/coach" replace />} />}
       {isOn(S, 'coach') && <Route path="/coach/setup" element={<CoachSetup />} />}
       <Route path="/admin" element={user?.admin ? <Admin /> : <Navigate to="/home" replace />} />
+      <Route path="/trainer" element={user?.trainer ? <Trainer /> : <Navigate to="/home" replace />} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   ))

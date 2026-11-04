@@ -172,6 +172,8 @@ tags:
       attached to a logged workout. Stored per profile (one quota for both) and named
       by the SHA-256 of its bytes; the state only carries a `MediaRef`. Every route here is a
       404 when the instance runs with `MEDIA_UPLOADS=0`.
+  - name: trainer
+    description: Trainers (PT) sending plans to their students
   - name: coach
     description: >-
       AI Coach: plans, reviews and debriefs. Every route here answers 503 unless the
@@ -3121,6 +3123,239 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
               example: { error: "no such code" }
 
+  /api/admin/user/trainer:
+    post:
+      tags: [admin]
+      operationId: adminUserTrainer
+      summary: 'Admin: make a profile a trainer, or link a student to one'
+      description: >-
+        Sets `trainer` on a profile and/or its `trainerId` (null unlinks). A trainer
+        sees their students and can send them plans. Audited.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                trainer: { type: boolean }
+                trainerId: { type: [string, 'null'] }
+      responses:
+        '200':
+          description: The profile's trainer fields now.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  id: { type: string }
+                  trainer: { type: boolean }
+                  trainerId: { type: [string, 'null'] }
+        '400': { description: The request was not valid. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Not found. }
+  /api/trainer/students:
+    get:
+      tags: [trainer]
+      operationId: trainerStudents
+      summary: "Trainer: the trainer's students"
+      description: Each student with their workout count, last workout and any plan sent and not yet opened.
+      responses:
+        '200':
+          description: The students.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  students:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        workouts: { type: integer }
+                        lastWorkout: { type: [string, 'null'] }
+                        pending: { type: [object, 'null'] }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/trainer/invites/new:
+    post:
+      tags: [trainer]
+      operationId: trainerInviteNew
+      summary: 'Trainer: an invite that makes its profile your student'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string, maxLength: 60 }
+      responses:
+        '200':
+          description: The new invite.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invite: { $ref: '#/components/schemas/Invite' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/trainer/plan:
+    post:
+      tags: [trainer]
+      operationId: trainerPlanSend
+      summary: 'Trainer: send a plan file to a student'
+      description: >-
+        Stores the plan file (the same format as a shared plan) as the student's one
+        pending plan, replacing any they have not opened. At most 256 KB. Audited.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId, plan]
+              properties:
+                studentId: { type: string }
+                name: { type: string, maxLength: 80 }
+                plan: { type: object }
+      responses:
+        '200':
+          description: Sent.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  id: { type: string }
+        '400': { description: The request was not valid. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Not found. }
+  /api/trainer/assessment:
+    post:
+      tags: [trainer]
+      operationId: trainerAssessment
+      summary: "Trainer: record a check-in (weight, body fat, measurements) for a student"
+      description: >-
+        Canonical units: kg, cm, body fat in %. Measurement keys are the app's built-in fields.
+        Stored until the student's app merges it into their history; at most 50 waiting. Audited.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId, date]
+              properties:
+                studentId: { type: string }
+                date: { type: string, format: date }
+                weight: { type: number, minimum: 20, maximum: 400 }
+                values: { type: object, additionalProperties: { type: number } }
+                note: { type: string, maxLength: 500 }
+      responses:
+        '200':
+          description: Recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  id: { type: string }
+        '400': { description: The request was not valid. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Not found. }
+  /api/assessments:
+    get:
+      tags: [trainer]
+      operationId: assessments
+      summary: 'Check-ins your trainer recorded, waiting for this app'
+      responses:
+        '200':
+          description: The waiting check-ins.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  assessments: { type: array, items: { type: object } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/assessments/done:
+    post:
+      tags: [trainer]
+      operationId: assessmentsDone
+      summary: 'Merged into your history: remove them'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids: { type: array, items: { type: string }, maxItems: 100 }
+      responses:
+        '200':
+          description: Removed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  removed: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/plan-offer:
+    get:
+      tags: [trainer]
+      operationId: planOffer
+      summary: 'The plan your trainer sent, if one is waiting'
+      responses:
+        '200':
+          description: The offer, or null.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  offer: { type: [object, 'null'] }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/plan-offer/done:
+    post:
+      tags: [trainer]
+      operationId: planOfferDone
+      summary: 'Accepted or dismissed: remove the waiting plan'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+      responses:
+        '200':
+          description: Removed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Not found. }
   /api/admin/audit:
     get:
       tags: [admin]

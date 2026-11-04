@@ -1,0 +1,23 @@
+# The public site and the app, built by scripts/build-site.mjs into ./site.
+# The API runs on Fly.io (fly.toml); /app/api/* is proxied there, signed with EDGE_PROXY_SECRET.
+#
+# Netlify environment variables (Site configuration > Environment variables):
+#   EDGE_PROXY_SECRET   the same long random value as the Fly.io secret of that name
+# Netlify sets URL itself; the build uses it as the canonical origin.
+
+[build]
+  command = "npm ci --prefix frontend && node scripts/build-site.mjs"
+  publish = "site"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# The API. `signed` makes Netlify add X-Nf-Sign, a JWS made with this env var's value, which the
+# API checks before anything else (api/edge-proxy.js). Change the host if the Fly app has another name.
+[[redirects]]
+  from = "/app/api/*"
+  to = "https://serie-api.fly.dev/api/:splat"
+  status = 200
+  force = true
+  signed = "EDGE_PROXY_SECRET"
+
