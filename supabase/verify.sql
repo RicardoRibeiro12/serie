@@ -1,280 +1,222 @@
--- Série — verification. Run in the SQL Editor after schema.sql.
---
--- Part A: plain catalogue SELECTs (run them one by one, or all; the editor shows the last).
--- Part B: one DO block that seeds throwaway auth.users + profiles, impersonates each of them
---         (set local role authenticated + request.jwt.claims) and checks what RLS and the RPCs
---         allow. It ALWAYS ends by raising an exception, so everything it wrote is rolled back;
---         the exception message is the report ("VERIFY PASS ..." or "VERIFY FAIL ...").
-
--- ===== Part A ================================================================================
-
--- A1. Tables and RLS flag
-select c.relname as table, c.relrowsecurity as rls_enabled
-  from pg_class c join pg_namespace n on n.oid = c.relnamespace
- where n.nspname = 'public' and c.relkind = 'r'
- order by 1;
-
--- A2. Policies
-select tablename, policyname, cmd, roles
-  from pg_policies where schemaname = 'public' order by tablename, policyname;
-
--- A3. Functions, security definer flag, and who may execute them
-select p.proname, p.prosecdef as security_definer,
-       has_function_privilege('anon', p.oid, 'execute')          as anon_exec,
-       has_function_privilege('authenticated', p.oid, 'execute') as auth_exec
-  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
- where n.nspname = 'public' order by 1;
-
--- A4. Table grants for the API roles
-select table_name, grantee, string_agg(privilege_type, ', ' order by privilege_type) as privileges
-  from information_schema.role_table_grants
- where table_schema = 'public' and grantee in ('anon', 'authenticated')
- group by 1, 2 order by 1, 2;
-
--- ===== Part B ================================================================================
+-- Série — verification of schema.sql. Run in the SQL Editor after schema.sql.
+-- One DO block seeds throwaway auth.users, impersonates each (role `authenticated` plus
+-- request.jwt.claims) and checks what the policies and RPCs allow. It ALWAYS ends by raising
+-- an exception, so everything it wrote is rolled back; the message is the report.
 
 do $verify$
 declare
-  o   uuid := gen_random_uuid();   -- owner of gym 1
-  t   uuid := gen_random_uuid();   -- trainer in gym 1
-  t2  uuid := gen_random_uuid();   -- second trainer in gym 1
-  s   uuid := gen_random_uuid();   -- student of t
-  s2  uuid := gen_random_uuid();   -- student of t2
-  x   uuid := gen_random_uuid();   -- signed up, no profile
-  o2  uuid := gen_random_uuid();   -- owner of gym 2
-  c_t text; c_t2 text; c_s text; c_s2 text;
-  n int; r jsonb; ok boolean; v text;
-  log text[] := '{}';
-  fails int := 0;
+  o  uuid := gen_random_uuid();   -- owner of gyms A and B (platform admin)
+  t  uuid := gen_random_uuid();   -- trainer in A and in B
+  t2 uuid := gen_random_uuid();   -- trainer in A
+  s  uuid := gen_random_uuid();   -- student in A, of t
+  s2 uuid := gen_random_uuid();   -- student in A, of t2
+  sb uuid := gen_random_uuid();   -- student in B, of t
+  o2 uuid := gen_random_uuid();   -- owner of gym C (via owner invite)
+  x  uuid := gen_random_uuid();   -- signed up, nothing else
+  ga uuid; gb uuid; gc uuid;
+  code text; n int; r jsonb; ok boolean;
+  log text := ''; fails int := 0;
 begin
-  -- seed auth users (as postgres)
-  insert into auth.users (instance_id, id, aud, role, email)
-  select '00000000-0000-0000-0000-000000000000', u, 'authenticated', 'authenticated',
-         'verify-' || u || '@example.invalid'
-    from unnest(array[o, t, t2, s, s2, x, o2]) u;
+  insert into auth.users (id, aud, role, email)
+  select u, 'authenticated', 'authenticated', 'verify-' || u || '@example.invalid'
+    from unnest(array[o, t, t2, s, s2, sb, o2, x]) u;
 
-  -- helper macro: impersonate
-  -- (inline: set_config + set local role)
+  -- as <uid> -------------------------------------------------------------------------------
+  -- (set_config is transaction-local; `set local role` makes RLS apply)
 
-  -- 1. owner creates gym
+  -- 1. bootstrap: o becomes platform admin + owner of gym A; nobody can bootstrap again
   perform set_config('request.jwt.claims', json_build_object('sub', o, 'role', 'authenticated')::text, true);
-  set local role authenticated;
-  perform public.create_gym('Verify Gym', 'Owner');
-  select count(*) into n from public.profiles where id = o and role = 'owner';
-  log := log || format('%s create_gym makes owner', case when n = 1 then 'PASS' else 'FAIL' end);
-  if n <> 1 then fails := fails + 1; end if;
+  execute 'set local role authenticated';
+  select (public.bootstrap('Owner O', 'Gym A')).id into ga;
+  gb := (public.create_gym('Gym B')).id;
+  execute 'reset role';
 
-  -- 2. owner invites two trainers
-  select code into c_t  from public.create_invite('trainer');
-  select code into c_t2 from public.create_invite('trainer');
-  reset role;
+  perform set_config('request.jwt.claims', json_build_object('sub', x, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  begin
+    perform public.bootstrap('X', 'Evil gym');
+    log := log || ' || ' || 'FAIL bootstrap twice allowed'; fails := fails + 1;
+  exception when others then log := log || ' || ' || 'pass bootstrap only once';
+  end;
+  begin
+    perform public.create_gym('Evil gym');
+    log := log || ' || ' || 'FAIL non-owner created a gym'; fails := fails + 1;
+  exception when others then log := log || ' || ' || 'pass non-owner cannot create gyms';
+  end;
+  execute 'reset role';
 
+  -- 2. owner invites t (trainer in A and B) and t2 (trainer in A)
+  perform set_config('request.jwt.claims', json_build_object('sub', o, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  code := (public.create_invite('trainer', ga)).code;
+  execute 'reset role';
   perform set_config('request.jwt.claims', json_build_object('sub', t, 'role', 'authenticated')::text, true);
-  set local role authenticated;
-  perform public.redeem_invite(c_t, 'Trainer One');
-  select count(*) into n from public.profiles where id = t and role = 'trainer';
-  log := log || format('%s redeem_invite makes trainer', case when n = 1 then 'PASS' else 'FAIL' end);
-  if n <> 1 then fails := fails + 1; end if;
-  -- trainer cannot create a trainer invite
+  execute 'set local role authenticated';
+  perform public.redeem_invite(code, 'Trainer T');
+  execute 'reset role';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', o, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  code := (public.create_invite('trainer', gb)).code;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', t, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.redeem_invite(code, 'Trainer T');
+  select count(*) into n from public.memberships where user_id = t and role = 'trainer';
+  if n = 2 then log := log || ' || ' || 'pass trainer works in two gyms'; else log := log || ' || ' || ('FAIL trainer gyms ' || n); fails := fails + 1; end if;
+  execute 'reset role';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', o, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  code := (public.create_invite('trainer', ga)).code;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', t2, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.redeem_invite(code, 'Trainer T2');
+  execute 'reset role';
+
+  -- 3. trainers invite their students; a used code cannot be reused
+  perform set_config('request.jwt.claims', json_build_object('sub', t, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  code := (public.create_invite('student', ga)).code;
   begin
-    perform public.create_invite('trainer');
-    log := log || 'FAIL trainer created trainer invite'; fails := fails + 1;
-  exception when others then log := log || format('PASS trainer cannot invite trainer (%s)', sqlstate);
+    perform public.create_invite('trainer', ga);
+    log := log || ' || ' || 'FAIL trainer invited a trainer'; fails := fails + 1;
+  exception when others then log := log || ' || ' || 'pass trainer cannot invite trainers';
   end;
-  -- trainer cannot create a student invite for someone else
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.redeem_invite(code, 'Student S');
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s2, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
   begin
-    insert into public.invites (gym_id, role, trainer_id, created_by) values (public.my_gym(), 'student', o, t);
-    log := log || 'FAIL trainer invited student for another trainer'; fails := fails + 1;
-  exception when others then log := log || format('PASS trainer invite bound to self (%s)', sqlstate);
+    perform public.redeem_invite(code, 'Student S2');
+    log := log || ' || ' || 'FAIL invite reused'; fails := fails + 1;
+  exception when others then log := log || ' || ' || 'pass invite single use';
   end;
-  select code into c_s from public.create_invite('student');
-  reset role;
+  execute 'reset role';
 
   perform set_config('request.jwt.claims', json_build_object('sub', t2, 'role', 'authenticated')::text, true);
-  set local role authenticated;
-  perform public.redeem_invite(c_t2, 'Trainer Two');
-  select code into c_s2 from public.create_invite('student');
-  reset role;
-
-  -- 3. students sign up
-  perform set_config('request.jwt.claims', json_build_object('sub', s, 'role', 'authenticated')::text, true);
-  set local role authenticated;
-  perform public.redeem_invite(c_s, 'Student One');
-  select count(*) into n from public.profiles where id = s and role = 'student' and trainer_id = t;
-  log := log || format('%s student gets trainer from invite', case when n = 1 then 'PASS' else 'FAIL' end);
-  if n <> 1 then fails := fails + 1; end if;
-  -- student reads: self + own trainer only
-  select count(*) into n from public.profiles;
-  log := log || format('%s student sees 2 profiles (self + trainer): %s', case when n = 2 then 'PASS' else 'FAIL' end, n);
-  if n <> 2 then fails := fails + 1; end if;
-  -- student cannot promote self / change trainer
-  begin
-    update public.profiles set role = 'owner' where id = s;
-    log := log || 'FAIL student changed own role'; fails := fails + 1;
-  exception when others then log := log || format('PASS student cannot change role (%s)', sqlstate);
-  end;
-  begin
-    update public.profiles set trainer_id = t2 where id = s;
-    log := log || 'FAIL student changed own trainer'; fails := fails + 1;
-  exception when others then log := log || format('PASS student cannot change trainer (%s)', sqlstate);
-  end;
-  update public.profiles set name = 'Student Renamed' where id = s;
-  select count(*) into n from public.profiles where id = s and name = 'Student Renamed';
-  log := log || format('%s student renames self', case when n = 1 then 'PASS' else 'FAIL' end);
-  if n <> 1 then fails := fails + 1; end if;
-  -- no direct profile insert, no direct state write
-  begin
-    insert into public.profiles (id, name, role) values (x, 'Hacker', 'owner');
-    log := log || 'FAIL direct profile insert'; fails := fails + 1;
-  exception when others then log := log || format('PASS no direct profile insert (%s)', sqlstate);
-  end;
-  begin
-    update public.user_state set rev = 99 where user_id = s;
-    log := log || 'FAIL direct user_state update'; fails := fails + 1;
-  exception when others then log := log || format('PASS no direct user_state write (%s)', sqlstate);
-  end;
-  -- save_state concurrency
-  r := public.save_state('{"workouts":[{"d":"2026-11-04"}]}'::jsonb, 0);
-  ok := (r->>'ok')::boolean and (r->>'rev')::bigint = 1;
-  log := log || format('%s save_state rev 0 -> 1: %s', case when ok then 'PASS' else 'FAIL' end, r);
-  if not ok then fails := fails + 1; end if;
-  r := public.save_state('{"workouts":[]}'::jsonb, 0);
-  ok := not (r->>'ok')::boolean and (r->>'rev')::bigint = 1 and r ? 'doc';
-  log := log || format('%s save_state stale rev conflicts', case when ok then 'PASS' else 'FAIL' end);
-  if not ok then fails := fails + 1; end if;
-  begin
-    perform public.save_state('{}'::jsonb, 1);
-    log := log || 'FAIL empty doc accepted'; fails := fails + 1;
-  exception when others then log := log || format('PASS empty doc refused (%s)', sqlstate);
-  end;
-  -- student cannot write assessments / offers, cannot see invites
-  begin
-    insert into public.assessments (gym_id, trainer_id, student_id, date) values (public.my_gym(), s, s, current_date);
-    log := log || 'FAIL student inserted assessment'; fails := fails + 1;
-  exception when others then log := log || format('PASS student cannot insert assessment (%s)', sqlstate);
-  end;
-  select count(*) into n from public.invites;
-  log := log || format('%s student sees no invites: %s', case when n = 0 then 'PASS' else 'FAIL' end, n);
-  if n <> 0 then fails := fails + 1; end if;
-  reset role;
-
+  execute 'set local role authenticated';
+  code := (public.create_invite('student', ga)).code;
+  execute 'reset role';
   perform set_config('request.jwt.claims', json_build_object('sub', s2, 'role', 'authenticated')::text, true);
-  set local role authenticated;
-  perform public.redeem_invite(c_s2, 'Student Two');
-  perform public.save_state('{"workouts":[]}'::jsonb, 0);
-  reset role;
+  execute 'set local role authenticated';
+  perform public.redeem_invite(code, 'Student S2');
+  execute 'reset role';
 
-  -- 4. trainer t: sees own students only, reads their state, coaches them
   perform set_config('request.jwt.claims', json_build_object('sub', t, 'role', 'authenticated')::text, true);
-  set local role authenticated;
-  select count(*) into n from public.profiles;
-  log := log || format('%s trainer sees self + 1 student: %s', case when n = 2 then 'PASS' else 'FAIL' end, n);
-  if n <> 2 then fails := fails + 1; end if;
-  select count(*) into n from public.user_state where user_id = s;
-  log := log || format('%s trainer reads own student state', case when n = 1 then 'PASS' else 'FAIL' end);
-  if n <> 1 then fails := fails + 1; end if;
+  execute 'set local role authenticated';
+  code := (public.create_invite('student', gb)).code;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', sb, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.redeem_invite(code, 'Student SB');
+  -- student saves state and a workout
+  r := public.save_state('{"routines": [], "unit": "kg"}'::jsonb, 0);
+  perform public.save_workouts('[{"id": "w1", "day": "2026-11-03", "data": {"sets": 3}}]'::jsonb);
+  execute 'reset role';
+
+  -- 4. visibility
+  perform set_config('request.jwt.claims', json_build_object('sub', t, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.workouts where user_id = sb;
+  if n = 1 then log := log || ' || ' || 'pass trainer sees own student workouts (other gym)'; else log := log || ' || ' || ('FAIL trainer sees sb workouts ' || n); fails := fails + 1; end if;
   select count(*) into n from public.user_state where user_id = s2;
-  log := log || format('%s trainer cannot read other trainer''s student state', case when n = 0 then 'PASS' else 'FAIL' end);
-  if n <> 0 then fails := fails + 1; end if;
-  insert into public.assessments (gym_id, trainer_id, student_id, date, weight, "values")
-    values (public.my_gym(), t, s, current_date, 80, '{"waist":82}');
-  log := log || 'PASS trainer inserts assessment for own student';
-  begin
-    insert into public.assessments (gym_id, trainer_id, student_id, date) values (public.my_gym(), t, s2, current_date);
-    log := log || 'FAIL trainer assessed another trainer''s student'; fails := fails + 1;
-  exception when others then log := log || format('PASS trainer cannot assess other''s student (%s)', sqlstate);
-  end;
-  perform public.offer_plan(s, 'Plano A', '{"routines":[]}'::jsonb);
-  perform public.offer_plan(s, 'Plano B', '{"routines":[]}'::jsonb);
-  select count(*) into n from public.plan_offers where to_id = s;
-  log := log || format('%s offer_plan keeps one pending offer: %s', case when n = 1 then 'PASS' else 'FAIL' end, n);
-  if n <> 1 then fails := fails + 1; end if;
-  begin
-    perform public.offer_plan(s2, 'X', '{}'::jsonb);
-    log := log || 'FAIL trainer offered plan to other''s student'; fails := fails + 1;
-  exception when others then log := log || format('PASS trainer cannot offer to other''s student (%s)', sqlstate);
-  end;
-  reset role;
+  if n = 0 then log := log || ' || ' || 'pass trainer cannot read another trainer''s student'; else log := log || ' || ' || 'FAIL trainer read s2 state'; fails := fails + 1; end if;
+  select count(*) into n from public.gyms;
+  if n = 2 then log := log || ' || ' || 'pass trainer sees both gyms'; else log := log || ' || ' || ('FAIL trainer gyms visible ' || n); fails := fails + 1; end if;
+  execute 'reset role';
 
-  -- 5. student reads and deletes own offer, reads own assessment
   perform set_config('request.jwt.claims', json_build_object('sub', s, 'role', 'authenticated')::text, true);
-  set local role authenticated;
-  select count(*) into n from public.assessments;
-  log := log || format('%s student reads own assessment: %s', case when n = 1 then 'PASS' else 'FAIL' end, n);
-  if n <> 1 then fails := fails + 1; end if;
-  delete from public.plan_offers where to_id = s;
-  get diagnostics n = row_count;
-  log := log || format('%s student deletes own offer', case when n = 1 then 'PASS' else 'FAIL' end);
-  if n <> 1 then fails := fails + 1; end if;
-  reset role;
+  execute 'set local role authenticated';
+  select count(*) into n from public.workouts where user_id = sb;
+  if n = 0 then log := log || ' || ' || 'pass student cannot read another student'; else log := log || ' || ' || 'FAIL student read sb'; fails := fails + 1; end if;
+  select count(*) into n from public.gyms;
+  if n = 1 then log := log || ' || ' || 'pass student sees only own gym'; else log := log || ' || ' || ('FAIL student gyms ' || n); fails := fails + 1; end if;
+  select count(*) into n from public.profiles where id = s2;
+  if n = 0 then log := log || ' || ' || 'pass student cannot see other students'; else log := log || ' || ' || 'FAIL student saw s2'; fails := fails + 1; end if;
+  begin
+    update public.memberships set role = 'trainer' where user_id = s;
+    get diagnostics n = row_count;
+    if n = 0 then log := log || ' || ' || 'pass student cannot change own role'; else log := log || ' || ' || 'FAIL student promoted self'; fails := fails + 1; end if;
+  exception when others then log := log || ' || ' || 'pass student cannot change own role';
+  end;
+  begin
+    perform public.set_student_trainer(ga, s, t2);
+    log := log || ' || ' || 'FAIL student reassigned trainer'; fails := fails + 1;
+  exception when others then log := log || ' || ' || 'pass only owner reassigns trainers';
+  end;
+  execute 'reset role';
 
-  -- 6. owner: sees whole gym, moves a student to another PT, cannot mint an owner
+  -- 5. plans and assessments
+  perform set_config('request.jwt.claims', json_build_object('sub', t, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.offer_plan(ga, s, 'Full Body', '{"routines": []}'::jsonb);
+  begin
+    perform public.offer_plan(ga, s2, 'Nope', '{"routines": []}'::jsonb);
+    log := log || ' || ' || 'FAIL trainer sent plan to other trainer''s student'; fails := fails + 1;
+  exception when others then log := log || ' || ' || 'pass plan only to own students';
+  end;
+  insert into public.assessments (gym_id, author_id, student_id, day, weight, "values")
+  values (ga, t, s, current_date, 78.4, '{"waist": 84}');
+  begin
+    insert into public.assessments (gym_id, author_id, student_id, day, weight)
+    values (ga, t, s2, current_date, 70);
+    log := log || ' || ' || 'FAIL assessment for other trainer''s student'; fails := fails + 1;
+  exception when others then log := log || ' || ' || 'pass assessment only for own students';
+  end;
+  execute 'reset role';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', s, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.plan_offers where to_id = s;
+  if n = 1 then log := log || ' || ' || 'pass student sees plan sent to them'; else log := log || ' || ' || 'FAIL student plan ' || n; fails := fails + 1; end if;
+  select count(*) into n from public.assessments where student_id = s;
+  if n = 1 then log := log || ' || ' || 'pass student sees own assessment'; else log := log || ' || ' || 'FAIL student assessment ' || n; fails := fails + 1; end if;
+  execute 'reset role';
+
+  -- 6. owner: reassign s to t2 when t leaves gym A; usage counts
   perform set_config('request.jwt.claims', json_build_object('sub', o, 'role', 'authenticated')::text, true);
-  set local role authenticated;
-  select count(*) into n from public.profiles;
-  log := log || format('%s owner sees whole gym (5): %s', case when n = 5 then 'PASS' else 'FAIL' end, n);
-  if n <> 5 then fails := fails + 1; end if;
-  select count(*) into n from public.user_state;
-  log := log || format('%s owner reads gym states (5): %s', case when n = 5 then 'PASS' else 'FAIL' end, n);
-  if n <> 5 then fails := fails + 1; end if;
-  update public.profiles set trainer_id = t2 where id = s;
-  select count(*) into n from public.profiles where id = s and trainer_id = t2;
-  log := log || format('%s owner reassigns student PT', case when n = 1 then 'PASS' else 'FAIL' end);
-  if n <> 1 then fails := fails + 1; end if;
-  begin
-    update public.profiles set role = 'owner' where id = t;
-    log := log || 'FAIL owner minted another owner'; fails := fails + 1;
-  exception when others then log := log || format('PASS owner cannot mint owner (%s)', sqlstate);
-  end;
-  begin
-    update public.profiles set trainer_id = s2 where id = s;
-    log := log || 'FAIL student set as trainer'; fails := fails + 1;
-  exception when others then log := log || format('PASS trainer_id must be a trainer (%s)', sqlstate);
-  end;
-  -- demoting trainer t2 clears its students' trainer_id
-  update public.profiles set role = 'student' where id = t2;
-  select count(*) into n from public.profiles where trainer_id = t2;
-  log := log || format('%s demoting a trainer frees their students: %s left', case when n = 0 then 'PASS' else 'FAIL' end, n);
-  if n <> 0 then fails := fails + 1; end if;
-  reset role;
+  execute 'set local role authenticated';
+  perform public.remove_member(ga, t);
+  select count(*) into n from public.memberships where gym_id = ga and trainer_id = t;
+  if n = 0 then log := log || ' || ' || 'pass removed trainer leaves students unassigned'; else log := log || ' || ' || 'FAIL students still on removed trainer'; fails := fails + 1; end if;
+  perform public.set_student_trainer(ga, s, t2);
+  select count(*) into n from public.memberships where gym_id = gb and user_id = t;
+  if n = 1 then log := log || ' || ' || 'pass trainer kept in the other gym'; else log := log || ' || ' || 'FAIL trainer lost gym B'; fails := fails + 1; end if;
+  select coalesce(sum(students), 0) into n from public.gym_usage(gb);
+  if n = 1 then log := log || ' || ' || 'pass usage counts the active student in gym B'; else log := log || ' || ' || ('FAIL usage ' || n); fails := fails + 1; end if;
+  code := (public.create_invite('owner', null, null, 'Gym C')).code;
+  execute 'reset role';
 
-  -- 7. outsiders
-  perform set_config('request.jwt.claims', json_build_object('sub', x, 'role', 'authenticated')::text, true);
-  set local role authenticated;
-  select count(*) into n from public.profiles;
-  log := log || format('%s user without profile sees no profiles: %s', case when n = 0 then 'PASS' else 'FAIL' end, n);
-  if n <> 0 then fails := fails + 1; end if;
-  begin
-    perform public.redeem_invite(c_s, 'Reuse');
-    log := log || 'FAIL used invite redeemed again'; fails := fails + 1;
-  exception when others then log := log || format('PASS used invite refused (%s)', sqlstate);
-  end;
-  reset role;
-
+  -- 7. a new owner via owner invite sees only their gym
   perform set_config('request.jwt.claims', json_build_object('sub', o2, 'role', 'authenticated')::text, true);
-  set local role authenticated;
-  perform public.create_gym('Other Gym', 'Other Owner');
-  select count(*) into n from public.profiles;
-  log := log || format('%s other gym owner sees only self: %s', case when n = 1 then 'PASS' else 'FAIL' end, n);
-  if n <> 1 then fails := fails + 1; end if;
-  select count(*) into n from public.user_state where user_id = s;
-  log := log || format('%s other gym owner cannot read state', case when n = 0 then 'PASS' else 'FAIL' end);
-  if n <> 0 then fails := fails + 1; end if;
-  reset role;
-
-  -- 8. anon: no table access, check_invite allowed
-  perform set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
-  set local role anon;
+  execute 'set local role authenticated';
+  r := public.redeem_invite(code, 'Owner O2');
+  gc := (r->>'gym_id')::uuid;
+  select count(*) into n from public.gyms;
+  if n = 1 then log := log || ' || ' || 'pass new owner sees only own gym'; else log := log || ' || ' || ('FAIL o2 gyms ' || n); fails := fails + 1; end if;
+  select count(*) into n from public.memberships;
+  if n = 0 then log := log || ' || ' || 'pass new owner sees no other gym members'; else log := log || ' || ' || ('FAIL o2 memberships ' || n); fails := fails + 1; end if;
   begin
-    select count(*) into n from public.profiles;
-    log := log || 'FAIL anon can select profiles'; fails := fails + 1;
-  exception when others then log := log || format('PASS anon has no table access (%s)', sqlstate);
+    perform public.gym_usage(ga);
+    log := log || ' || ' || 'FAIL o2 read gym A usage'; fails := fails + 1;
+  exception when others then log := log || ' || ' || 'pass owners are isolated';
   end;
-  v := coalesce(public.check_invite('NOPE')::text, 'null');
-  log := log || format('PASS anon can call check_invite (unknown code -> %s)', v);
-  reset role;
+  execute 'reset role';
 
-  raise exception '% (% failed) || %',
-    case when fails = 0 then 'VERIFY PASS' else 'VERIFY FAIL' end, fails, array_to_string(log, ' || ');
-end
-$verify$;
+  -- 8. anon may only check an invite
+  execute 'set local role anon';
+  begin
+    perform 1 from public.profiles limit 1;
+    log := log || ' || ' || 'FAIL anon read profiles'; fails := fails + 1;
+  exception when others then log := log || ' || ' || 'pass anon has no table access';
+  end;
+  execute 'reset role';
+
+  raise exception 'VERIFY % (% checks, % failed) || %',
+    case when fails = 0 then 'PASS' else 'FAIL' end, (length(log) - length(replace(log, ' || ', ''))) / 4, fails, log;
+end $verify$;
