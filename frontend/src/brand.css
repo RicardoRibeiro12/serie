@@ -75,7 +75,21 @@ body { font-family: var(--font-display); }
 .tr-acts{display:flex;gap:8px;flex-wrap:wrap}
 .tr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
 .tr-field{display:flex;flex-direction:column;gap:4px;min-width:0}
-.btn-link{align-self:flex-start;background:none;border:0;padding:10px 0;color:var(--acc);font:inherit;cursor:pointer;min-height:44px}
+.btn-link{align-self:flex-start;background:none;border:0;padding:10px 0;color:var(--acc-ink);font:inherit;cursor:pointer;min-height:44px}
 /* Inputs sit on a card here, whose fill is the input's own: raise them a step. */
 .card .tr-send .input{background:var(--surface-raised);box-shadow:inset 0 0 0 1px var(--raised-line)}
 .card .tr-send .input:focus{box-shadow:inset 0 0 0 2px var(--acc)}
+
+/* Trainer: invite header, pending plan line, and text that sits in the accent */
+.tr-invite{gap:12px;flex-wrap:wrap}
+.tr-invite-copy{min-width:0;flex:1 1 220px}
+.tr-pending{color:var(--acc-ink)}
+.tr-code{font-variant-numeric:tabular-nums}
+
+/* Home, for a student: a plan from the trainer is the one thing waiting, so it carries the accent */
+.offer-card{box-shadow:inset 0 0 0 1px var(--acc-line)}
+.offer-head{gap:12px;align-items:flex-start}
+.offer-icon{background:var(--acc);color:var(--on-acc)}
+.offer-copy{min-width:0}
+.offer-acts{gap:8px;margin-top:14px;flex-wrap:wrap}
+.tr-acts .btn[aria-expanded="true"]{box-shadow:inset 0 0 0 2px var(--acc)}

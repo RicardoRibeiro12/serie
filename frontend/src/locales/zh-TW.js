@@ -3652,8 +3652,6 @@ export default {
   "Whoever signs up with this code becomes your student.": "Whoever signs up with this code becomes your student.",
   "New code": "New code",
   "No students yet. Send them an invite code.": "No students yet. Send them an invite code.",
-  "{0} workout": "{0} workout",
-  "{0} workouts": "{0} workouts",
   "last {0}": "last {0}",
   "“{0}” sent, not opened yet": "“{0}” sent, not opened yet",
   "Send plan": "Send plan",

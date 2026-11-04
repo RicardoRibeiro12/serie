@@ -44,19 +44,52 @@ const MARK = '<svg viewBox="0 0 28 28" aria-hidden="true"><rect x="2" y="11" wid
 
 const NAV = [['home', 'Início', '/'], ['sobre', 'Sobre', '/sobre/'], ['pt', 'Personal trainers', '/personal-trainers/'], ['priv', 'Privacidade', '/privacidade/']]
 
-const header = page => `<a class="skip" href="#main">${page.lang === 'en' ? 'Skip to content' : 'Saltar para o conteúdo'}</a>
+// Header words per page language. The inner pages exist only in Portuguese, so their links keep
+// their Portuguese names everywhere.
+const UI = {
+  'pt-PT': { skip: 'Saltar para o conteúdo', home: 'página inicial', main: 'Principal', app: 'Entrar', lang: 'Idioma', homePath: '/' },
+  en: { skip: 'Skip to content', home: 'home', main: 'Main', app: 'Open app', lang: 'Language', homePath: '/en/' },
+  fr: { skip: 'Aller au contenu', home: 'accueil', main: 'Principal', app: 'Ouvrir l’app', lang: 'Langue', homePath: '/fr/' }
+}
+
+const header = page => {
+  const u = UI[page.lang] || UI['pt-PT']
+  const links = NAV.map(([k, label, href]) => `<a href="${href}"${page.nav === k && page.lang === 'pt-PT' ? ' aria-current="page"' : ''}${page.lang !== 'pt-PT' ? ' hreflang="pt-PT"' : ''}>${label}</a>`).join('\n      ')
+  return `<a class="skip" href="#main">${u.skip}</a>
 <header class="top"><div class="wrap">
-  <a class="brand" href="${page.lang === 'en' ? '/en/' : '/'}" aria-label="${SITE.name}, ${page.lang === 'en' ? 'home' : 'página inicial'}">${MARK}<span>${SITE.name}</span></a>
-  <nav class="nav" aria-label="${page.lang === 'en' ? 'Main' : 'Principal'}">
-    ${NAV.map(([k, label, href]) => `<a href="${href}"${page.nav === k && page.lang !== 'en' ? ' aria-current="page"' : ''}>${label}</a>`).join('\n    ')}
-    <a href="${page.lang === 'en' ? '/' : '/en/'}" hreflang="${page.lang === 'en' ? 'pt-PT' : 'en'}" lang="${page.lang === 'en' ? 'pt-PT' : 'en'}">${page.lang === 'en' ? 'PT' : 'EN'}</a>
-    <a class="btn primary" href="/app/">${page.lang === 'en' ? 'Open app' : 'Entrar'}</a>
+  <a class="brand" href="${u.homePath}" aria-label="${SITE.name}, ${u.home}">${MARK}<span>${SITE.name}</span></a>
+  <nav class="nav" aria-label="${u.main}">
+      ${links}
   </nav>
+  <a class="btn primary cta" href="/app/">${u.app}</a>
+  ${langSwitch(page, 'lang', false)}
+  <details class="menu">
+    <summary aria-label="Menu"><svg class="i-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"/></svg><svg class="i-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"/></svg></summary>
+    <div class="menu-panel">
+      <nav class="menu-nav" aria-label="${u.main}">
+      ${links}
+      </nav>
+      ${langSwitch(page, 'menu-lang', true)}
+    </div>
+  </details>
 </div></header>`
+}
+
+// Language switcher: a flag from the shared sprite plus visible text, since a flag alone is neither
+// accessible nor a language. The current language is marked, not hidden. The desktop header shows the
+// code (PT, EN, FR); the phone menu has room for the language's own name.
+const LANGS = [['pt-PT', 'pt', 'PT', 'Português', 'Português (Portugal)', '/'], ['en', 'gb', 'EN', 'English', 'English', '/en/'], ['fr', 'fr', 'FR', 'Français', 'Français', '/fr/']]
+const langSwitch = (page, cls, long) => `<div class="${cls}" role="group" aria-label="${(UI[page.lang] || UI['pt-PT']).lang}">
+    ${LANGS.map(([lang, flag, code, short, name, home]) => {
+      const here = page.lang === lang
+      const href = here ? page.path : (page.alternate && page.alternate[lang]) || home
+      return `<a href="${href}" hreflang="${lang}" lang="${lang}" aria-label="${name}"${here ? ' aria-current="true"' : ''}><svg class="flag" viewBox="0 0 30 20" aria-hidden="true"><use href="/assets/flags.svg#flag-${flag}"/></svg><span>${long ? short : code}</span></a>`
+    }).join('\n    ')}
+  </div>`
 
 const footer = page => `<footer class="foot"><div class="wrap">
   <p>${SITE.name} é um fork do <a href="https://github.com/DuarteSantos8/openGym" rel="noopener">openGym</a> (AGPL-3.0). Animações dos exercícios © Gym visual, licenciadas ao openGym.</p>
-  <nav aria-label="${page.lang === 'en' ? 'Footer' : 'Rodapé'}">
+  <nav aria-label="${({ en: 'Footer', fr: 'Pied de page' })[page.lang] || 'Rodapé'}">
     ${NAV.map(([, label, href]) => `<a href="${href}">${label}</a>`).join('\n    ')}
     <a href="/app/">App</a>
     <a href="${SITE.repo}" rel="noopener">Código-fonte</a>
@@ -120,7 +153,7 @@ ${alt}
 <meta property="og:title" content="${esc(page.title)}">
 <meta property="og:description" content="${esc(page.description)}">
 <meta property="og:url" content="${abs(page.noindex ? '/' : page.path)}">
-<meta property="og:locale" content="${page.lang === 'en' ? 'en_GB' : 'pt_PT'}">
+<meta property="og:locale" content="${({ en: 'en_GB', fr: 'fr_FR' })[page.lang] || 'pt_PT'}">
 <meta property="og:image" content="${abs('/assets/og.png')}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">

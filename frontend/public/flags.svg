@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <!-- Language flags, 3:2, drawn simplified so they stay legible at 20px. Reference with
+       <svg><use href="flags.svg#flag-pt"/></svg>. Fills are attributes: the site CSP allows no inline styles. -->
+  <symbol id="flag-pt" viewBox="0 0 30 20">
+    <rect width="30" height="20" fill="#da291c"/>
+    <rect width="12" height="20" fill="#046a38"/>
+    <circle cx="12" cy="10" r="5.2" fill="none" stroke="#ffe900" stroke-width="1.4"/>
+    <path d="M9.4 6.8h5.2v4.1a2.6 2.6 0 0 1-5.2 0z" fill="#da291c"/>
+    <path d="M10.4 7.8h3.2v3a1.6 1.6 0 0 1-3.2 0z" fill="#ffffff"/>
+    <rect x="11.5" y="8.3" width="1" height="1" fill="#002d72"/>
+    <rect x="10.9" y="9.5" width="1" height="1" fill="#002d72"/>
+    <rect x="12.1" y="9.5" width="1" height="1" fill="#002d72"/>
+    <rect x="11.5" y="10.7" width="1" height="1" fill="#002d72"/>
+  </symbol>
+  <symbol id="flag-gb" viewBox="7.5 0 45 30">
+    <rect width="60" height="30" fill="#012169"/>
+    <path d="M0 0L60 30M60 0L0 30" stroke="#ffffff" stroke-width="6"/>
+    <path d="M0 0L30 15M60 30L30 15" stroke="#c8102e" stroke-width="2" transform="translate(0 1.4)"/>
+    <path d="M60 0L30 15M0 30L30 15" stroke="#c8102e" stroke-width="2" transform="translate(0 -1.4)"/>
+    <path d="M30 0v30M0 15h60" stroke="#ffffff" stroke-width="10"/>
+    <path d="M30 0v30M0 15h60" stroke="#c8102e" stroke-width="6"/>
+  </symbol>
+  <symbol id="flag-fr" viewBox="0 0 30 20">
+    <rect width="30" height="20" fill="#ce1126"/>
+    <rect width="20" height="20" fill="#ffffff"/>
+    <rect width="10" height="20" fill="#002654"/>
+  </symbol>
+</svg>

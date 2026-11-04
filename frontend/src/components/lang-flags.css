@@ -1,0 +1,9 @@
+/* Flag language switcher (components/LangFlags.jsx). */
+.lang-flags{display:inline-flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:4px;border-radius:22px;background:var(--surface);align-self:center;max-width:100%}
+.lang-flag{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px 0 10px;border:0;border-radius:999px;background:none;color:var(--label-2);font:inherit;font-size:var(--fs-footnote);cursor:pointer;transition:background var(--fast),color var(--fast)}
+.lang-flag svg{flex:none;border-radius:3px;box-shadow:0 0 0 1px var(--raised-line)}
+.lang-flag:hover{color:var(--label)}
+.lang-flag.on{background:var(--surface-raised);color:var(--label);font-weight:600}
+.lang-flag:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.login-langs{margin:16px auto 18px}
+.settings-langs{display:flex;justify-content:center;margin:0 0 14px}

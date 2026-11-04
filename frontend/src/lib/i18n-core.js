@@ -11,8 +11,8 @@ export const LANGS = {
 }
 // The languages this fork offers for now. The other packs stay in the tree so turning one back on
 // is a one-word change here; any other language a device asks for shows as one of these.
-export const OFFERED_LANGS = ['pt', 'en']
-export const offeredLang = l => OFFERED_LANGS.includes(l) ? l : (baseLang(l) === 'pt' ? 'pt' : 'en')
+export const OFFERED_LANGS = ['pt', 'en', 'fr']
+export const offeredLang = l => { const s = String(l || ''); if (OFFERED_LANGS.includes(s)) return s; const p = s.split('-')[0]; return OFFERED_LANGS.includes(p) ? p : 'en' }
 // Languages with exercise instructions / names, generated from catalogue/i18n by
 // scripts/catalogue/build.mjs. A pack can be partial; what it lacks shows in English.
 import { INSTR_LANGS, EXERCISE_NAME_LANGS } from './catalogue-langs.js'

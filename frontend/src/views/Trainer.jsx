@@ -7,7 +7,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { api } from '../lib/api.js'
 import { t, tn } from '../lib/i18n.js'
-import { fmtDate, todayISO } from '../lib/format.js'
+import { fmtDate, fmtNum, todayISO } from '../lib/format.js'
 import { buildPlanBundle, buildProgrammeBundle } from '../lib/plan-share.js'
 import { programmesOf } from '../lib/programmes.js'
 import { MEASUREMENT_FIELDS } from '../lib/measurements.js'
@@ -37,17 +37,18 @@ export default function Trainer() {
     </div>
 
     <div className="card">
-      <div className="row between" style={{ gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ minWidth: 0 }}>
+      <div className="row between tr-invite">
+        <div className="tr-invite-copy">
           <div className="ttl">{t('Invite a student')}</div>
           <div className="small dim">{t('Whoever signs up with this code becomes your student.')}</div>
         </div>
-        <Button size="sm" variant="filled" icon="plus" onClick={newInvite}>{t('New code')}</Button>
+        <Button size="sm" variant="primary" icon="plus" onClick={newInvite}>{t('New code')}</Button>
       </div>
       {invite && <div className="tr-code" aria-live="polite">{invite}</div>}
     </div>
 
-    {err && <div className="card small dim">{err}</div>}
+    {!students && !err && <div className="card small dim" aria-live="polite">{t('Loading…')}</div>}
+    {err && <div className="card small dim" role="alert">{err}</div>}
     {students && !students.length && <div className="card small dim">{t('No students yet. Send them an invite code.')}</div>}
 
     {students && students.length > 0 && <div className="card tr-list">
@@ -59,14 +60,14 @@ export default function Trainer() {
             {tn('{0} workout', '{0} workouts', s.workouts)}
             {s.lastWorkout ? ' · ' + t('last {0}', fmtDate(s.lastWorkout)) : ''}
           </div>
-          {(s.weight || s.bodyFat) && <div className="small dim tnum">
-            {s.weight ? `${s.weight.w} ${s.unit} · ${fmtDate(s.weight.d)}` : ''}{s.weight && s.bodyFat ? ' · ' : ''}{s.bodyFat ? t('{0}% body fat', s.bodyFat.v) : ''}
+          {(s.weight || s.bodyFat) && <div className="small dim">
+            {s.weight && <><span className="tnum">{fmtNum(s.weight.w)} {s.unit}</span> · {fmtDate(s.weight.d)}</>}{s.weight && s.bodyFat ? ' · ' : ''}{s.bodyFat ? t('{0}% body fat', fmtNum(s.bodyFat.v)) : ''}
           </div>}
-          {s.pending && <div className="small" style={{ color: 'var(--acc)' }}>{t('“{0}” sent, not opened yet', s.pending.name)}</div>}
+          {s.pending && <div className="small tr-pending">{t('“{0}” sent, not opened yet', s.pending.name)}</div>}
         </div>
         <div className="tr-acts">
-          <Button size="sm" variant="tinted" icon="ruler" onClick={() => { setPicked(null); setCheckin(checkin === s.id ? null : s.id) }}>{t('Check-in')}</Button>
-          <Button size="sm" variant="tinted" icon="share" onClick={() => { setCheckin(null); setPicked(picked === s.id ? null : s.id) }}>{t('Send plan')}</Button>
+          <Button size="sm" variant="tinted" aria-expanded={checkin === s.id} icon="ruler" onClick={() => { setPicked(null); setCheckin(checkin === s.id ? null : s.id) }}>{t('Check-in')}</Button>
+          <Button size="sm" variant="tinted" aria-expanded={picked === s.id} icon="share" onClick={() => { setCheckin(null); setPicked(picked === s.id ? null : s.id) }}>{t('Send plan')}</Button>
         </div>
         {picked === s.id && <SendPlan S={S} student={s} done={() => { setPicked(null); load() }} />}
         {checkin === s.id && <CheckInForm student={s} done={() => { setCheckin(null); load() }} />}
@@ -105,7 +106,7 @@ function SendPlan({ S, student, done }) {
     </select>
     <label className="small dim" htmlFor={'tr-name-' + student.id}>{t('Name the student sees')}</label>
     <input id={'tr-name-' + student.id} className="input" value={name} maxLength={80} placeholder={t('e.g. Hypertrophy, 8 weeks')} onChange={e => setName(e.target.value)} />
-    <Button variant="filled" disabled={busy} onClick={send}>{busy ? t('Sending…') : t('Send to {0}', student.name)}</Button>
+    <Button variant="primary" disabled={busy} onClick={send}>{busy ? t('Sending…') : t('Send to {0}', student.name)}</Button>
   </div>
 }
 
@@ -155,6 +156,6 @@ function CheckInForm({ student, done }) {
     <button type="button" className="btn-link small" onClick={() => setMore(m => !m)}>{more ? t('Fewer measurements') : t('More measurements')}</button>
     <label className="small dim" htmlFor={id('note')}>{t('Note')}</label>
     <input id={id('note')} className="input" maxLength={500} value={note} onChange={e => setNote(e.target.value)} />
-    <Button variant="filled" disabled={busy} onClick={save}>{busy ? t('Saving…') : t('Save check-in')}</Button>
+    <Button variant="primary" disabled={busy} onClick={save}>{busy ? t('Saving…') : t('Save check-in')}</Button>
   </div>
 }

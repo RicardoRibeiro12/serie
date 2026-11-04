@@ -3659,8 +3659,6 @@ export default {
   "Whoever signs up with this code becomes your student.": "Quem criar conta com este código passa a ser teu aluno.",
   "New code": "Novo código",
   "No students yet. Send them an invite code.": "Ainda não tens alunos. Envia-lhes um código de convite.",
-  "{0} workout": "{0} treino",
-  "{0} workouts": "{0} treinos",
   "last {0}": "último a {0}",
   "“{0}” sent, not opened yet": "«{0}» enviado, ainda não aberto",
   "Send plan": "Enviar plano",

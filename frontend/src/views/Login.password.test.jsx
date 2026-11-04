@@ -45,8 +45,8 @@ function mount(el) {
   act(() => root.render(el))
   return host
 }
-const buttons = host => [...host.querySelectorAll('button')].map(b => b.textContent)
-const button = (host, text) => [...host.querySelectorAll('button')].find(b => b.textContent === text)
+const buttons = host => [...host.querySelectorAll('button:not(.lang-flag)')].map(b => b.textContent)
+const button = (host, text) => [...host.querySelectorAll('button:not(.lang-flag)')].find(b => b.textContent === text)
 
 beforeEach(() => { mocks.webauthn = true; mocks.config = null; mocks.sheets.length = 0 })
 afterEach(() => { act(() => { mounted.splice(0).forEach(({ root, host }) => { root.unmount(); host.remove() }) }) })

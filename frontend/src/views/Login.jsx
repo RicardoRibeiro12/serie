@@ -7,6 +7,7 @@ import { DEMO, REPO } from '../lib/demo.js'
 import { guestAllowed } from '../lib/guest.js'
 import { useState, useRef, useEffect } from 'react'
 import Icon from '../components/Icon.jsx'
+import LangFlags from '../components/LangFlags.jsx'
 import { Button, Segmented } from '../components/ui.jsx'
 import { askAddDeviceData } from '../sheets.jsx'
 import { passwordOn, PasswordRegisterForm, openPasswordSignIn } from '../components/PasswordAuth.jsx'
@@ -79,6 +80,7 @@ export default function Login() {
   const head = <>
     <div style={{ fontSize: 54, display: 'flex', justifyContent: 'center', color: 'var(--acc-ink)' }}><Icon name="dumbbell" /></div>
     <h1 className="t-large" style={{ margin: '10px 0 4px' }}>Série</h1>
+    <LangFlags className="login-langs" />
   </>
   const wrap = { display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '78vh', textAlign: 'center' }
 

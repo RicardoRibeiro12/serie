@@ -45,15 +45,15 @@ export default function PlanOfferCard() {
   }
 
   return <div className="card offer-card">
-    <div className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
-      <span className="lrow-i" style={{ background: 'var(--acc)', color: 'var(--on-acc)' }}><Icon name="clipboard" /></span>
-      <div style={{ minWidth: 0 }}>
+    <div className="row offer-head">
+      <span className="lrow-i offer-icon" aria-hidden="true"><Icon name="clipboard" /></span>
+      <div className="offer-copy">
         <div className="lbl2">{offer.from ? t('From {0}, your trainer', offer.from) : t('From your trainer')}</div>
         <div className="ttl">{t('New plan: {0}', offer.name)}</div>
       </div>
     </div>
-    <div className="row" style={{ gap: 8, marginTop: 12 }}>
-      <Button variant="filled" onClick={open}>{t('Open plan')}</Button>
+    <div className="row offer-acts">
+      <Button variant="primary" onClick={open}>{t('Open plan')}</Button>
       <Button variant="ghost" className="dim" onClick={finish}>{t('Dismiss')}</Button>
     </div>
   </div>

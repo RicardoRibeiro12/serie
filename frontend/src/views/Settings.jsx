@@ -49,6 +49,7 @@ import { coachAvailable } from '../lib/coach.js'
 import { REST_MAX, REST_PAUSE_MIN, REST_PAUSE_MAX, fmtRest, fmtDuration } from '../lib/duration.js'
 import { starterPlanSheet, confirmSheet, importFromApp, importFromHevy, equipmentProfileSheet, plateInventorySheet, dumbbellInventorySheet, barDefaultsSheet, menuSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
+import LangFlags from '../components/LangFlags.jsx'
 import { durationSheet } from '../components/DurationWheel.jsx'
 import { showsConnection, showsLocalLine } from '../components/SyncBanner.jsx'
 import BackupFolderRow, { useBackupFolder, autoBackupSubtitle } from '../components/BackupFolderRow.jsx'
@@ -848,6 +849,7 @@ export default function Settings({ page = null, find = null, via = null, entryKe
     </>,
 
     units: () => <>
+      <div className="settings-langs"><LangFlags /></div>
       <Section>
         <SelectRow
           icon="globe" iconTint="var(--blue)" title={t('Language')}
