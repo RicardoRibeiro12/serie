@@ -24,7 +24,7 @@ repository: both platforms keep it as an environment variable.
    fly launch --no-deploy --copy-config
    ```
    ```bash
-   fly volumes create serie_data --size 1 --region mad
+   fly volumes create serie_data --size 1 --region cdg
    ```
    ```bash
    fly secrets set EDGE_PROXY_SECRET=the-same-value

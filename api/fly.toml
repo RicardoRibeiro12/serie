@@ -2,7 +2,7 @@
 # (EDGE_PROXY_SECRET, set with `fly secrets set`, never written here). Data lives on the volume.
 # Deploy from this folder: `cd api && fly deploy`. First deploy: see DEPLOY.md (the order matters for the first admin and invite-only signup).
 app = "serie-api"
-primary_region = "mad"
+primary_region = "cdg"
 
 [build]
   dockerfile = "Dockerfile"
@@ -15,8 +15,8 @@ primary_region = "mad"
   FIRST_USER_ADMIN = "1"
   AUDIT_LOG = "1"
   # The site the app is served from. Passkeys are bound to this host.
-  ORIGIN = "https://SITE.netlify.app"
-  RP_ID = "SITE.netlify.app"
+  ORIGIN = "https://serie-treino.netlify.app"
+  RP_ID = "serie-treino.netlify.app"
 
 [[mounts]]
   source = "serie_data"
