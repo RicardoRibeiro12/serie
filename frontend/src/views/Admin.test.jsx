@@ -81,6 +81,23 @@ describe('Admin user drill-down', () => {
     expect(rows[0].textContent).toContain('Push day')
     expect(rows[0].textContent).toContain('1 set')
   })
+
+  // Série on Supabase answered without `routines`, and opening a person blanked the whole app.
+  it('opens a profile whose answer leaves lists out, and offers the PT picker for a student', async () => {
+    const saved = mocks.answers['/api/admin/user']
+    mocks.answers['/api/admin/user'] = { user: { id: 'u1', name: 'Mallory', password: true }, lastSync: null }
+    mocks.answers['/api/admin/users'].users.push({ id: 'pt1', name: 'Coach Ana', trainer: true, workouts: 0 })
+    const page = render(<Admin />)
+    await settle()
+    act(() => [...page.querySelectorAll('.item')].find(el => el.textContent.includes('Mallory')).click())
+    const sheet = render(mocks.sheets[mocks.sheets.length - 1](() => {}))
+    await settle()
+    expect(sheet.textContent).toContain('Mallory')
+    const select = sheet.querySelector('select[id^="adm-pt-"]')
+    expect([...select.options].map(o => o.textContent)).toEqual(['No PT', 'Coach Ana'])
+    mocks.answers['/api/admin/user'] = saved
+    mocks.answers['/api/admin/users'].users = mocks.answers['/api/admin/users'].users.filter(u => u.id !== 'pt1')
+  })
 })
 
 // The users call failing, or answering without a list, used to leave "Loading…" up for good —

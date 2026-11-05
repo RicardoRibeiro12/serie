@@ -177,9 +177,9 @@ function UserDetail({ id, viewerOwner, onChanged, close, people = [] }) {
     </div>
     <div className="tiles" style={{ textAlign: 'start' }}>
       <div className="tile"><div className="l">{t('Workouts')}</div><div className="v v-sm">{workouts.length}</div></div>
-      <div className="tile"><div className="l">{t('Weigh-ins')}</div><div className="v v-sm">{d.bodyweight.length}</div></div>
+      <div className="tile"><div className="l">{t('Weigh-ins')}</div><div className="v v-sm">{(d.bodyweight || []).length}</div></div>
       <div className="tile"><div className="l">{t('Measurements')}</div><div className="v v-sm">{(d.measurements || []).length}</div></div>
-      <div className="tile"><div className="l">{t('Routines')}</div><div className="v v-sm">{d.routines.length}</div></div>
+      <div className="tile"><div className="l">{t('Routines')}</div><div className="v v-sm">{(d.routines || []).length}</div></div>
       <div className="tile"><div className="l">{t('Last sync')}</div><div className="v" style={{ fontSize: 'var(--fs-subhead)' }}>{rel(d.lastSync)}</div></div>
     </div>
     {!u.disabled && <>

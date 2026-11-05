@@ -248,8 +248,16 @@ const ROUTES = {
     const id = q(path, 'id')
     const p = ((await rpc('gym_people', { p_gym: g.id })) || []).find(x => x.id === id)
     if (!p) throw fail('no such profile', 404)
+    // Their document, for the counts the sheet shows (the owner may read a member's; a row the
+    // policies hide is simply empty). The sheet reads every one of these lists, so each is a list.
+    const rows = await rest('user_state?select=doc&user_id=eq.' + id).catch(() => [])
+    const doc = (rows && rows[0] && rows[0].doc) || {}
     // password: a boolean tells the screen this instance has passwords, which shows "Reset password".
-    return { user: { id: p.id, name: p.name, admin: !!p.admin, owner: !!p.owner, trainer: !!p.trainer, trainerId: p.trainerId || null, lastSync: p.lastSync ? Date.parse(p.lastSync) : null, password: true, credentials: [] }, lastSync: p.lastSync ? Date.parse(p.lastSync) : null, workouts: [], bodyweight: [], trainers: [] }
+    return {
+      user: { id: p.id, name: p.name, admin: !!p.admin, owner: !!p.owner, trainer: !!p.trainer, trainerId: p.trainerId || null, lastSync: p.lastSync ? Date.parse(p.lastSync) : null, password: true, credentials: [] },
+      lastSync: p.lastSync ? Date.parse(p.lastSync) : null,
+      workouts: records(doc.workouts), bodyweight: records(doc.bodyweight), measurements: records(doc.measurements), routines: records(doc.routines), trainers: []
+    }
   },
   'POST /api/admin/user/trainer': async b => {
     const g = await ownGym()
