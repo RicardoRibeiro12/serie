@@ -27,11 +27,11 @@ describe('modules', () => {
     expect(isOn({ modules: { body: false } }, 'later-module')).toBe(true)
   })
 
-  it('the old check-in switch decides until Modules does', () => {
-    expect(isOn({ checkIn: false }, 'checkin')).toBe(false)
-    expect(isOn({ checkIn: true }, 'checkin')).toBe(true)
-    expect(isOn({ checkIn: false, modules: { checkin: true } }, 'checkin')).toBe(true)
-    expect(isOn({ checkIn: true, modules: { checkin: false } }, 'checkin')).toBe(false)
+  // Série retired the openGym gym check-in: off whatever the old switch or Modules say.
+  it('the retired check-in is off for every profile', () => {
+    expect(isOn({ checkIn: true }, 'checkin')).toBe(false)
+    expect(isOn({ checkIn: false, modules: { checkin: true } }, 'checkin')).toBe(false)
+    expect(isOn({}, 'checkin')).toBe(false)
   })
 
   it('presets are nested, smallest first, and every one round-trips', () => {

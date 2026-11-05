@@ -68,8 +68,14 @@ export const PRESET = Object.fromEntries(PRESETS.map(p => [p.id, p]))
 
 const isMap = v => !!v && typeof v === 'object' && !Array.isArray(v)
 
+// Retired in Série: the openGym gym check-in (another gym's barcode, NFC stickers). The gym issues its
+// own card with a QR (views/MemberCard.jsx) that the front desk scans, so this module is off for every
+// profile, whatever it chose before, and the Modules page leaves it out.
+export const RETIRED = new Set(['checkin'])
+
 /** Whether module `id` is on for this profile. Unknown ids are on (a newer client's module). */
 export function isOn(S, id) {
+  if (RETIRED.has(id)) return false
   const v = isMap(S?.modules) ? S.modules[id] : undefined
   if (typeof v === 'boolean') return v
   // Before 1.4.4 the check-in had its own switch in Look & Home; it decides until Modules does.

@@ -35,10 +35,11 @@ const mountWith = (modules, extra = {}) => {
 const heads = () => [...host.querySelectorAll('.card-head-title')].map(el => el.textContent)
 
 describe('Home follows the modules', () => {
-  it('Everything: the weight card, the check-in and the streak are there', () => {
+  // Série retired the openGym gym check-in (lib/modules.js RETIRED): the gym's card replaces it.
+  it('Everything: the weight card and the streak are there, the retired check-in is not', () => {
     mountWith(undefined)
     expect(heads()).toContain('Body weight')
-    expect(heads()).toContain('Check in')
+    expect(heads()).not.toContain('Check in')
     expect(heads().some(h => /week streak/.test(h))).toBe(true)
   })
 
@@ -54,16 +55,15 @@ describe('Home follows the modules', () => {
   it('one module at a time, and back on brings it back', () => {
     mountWith({ body: false })
     expect(heads()).not.toContain('Body weight')
-    expect(heads()).toContain('Check in')
     mountWith({ body: true, checkin: false })
     expect(heads()).toContain('Body weight')
     expect(heads()).not.toContain('Check in')
   })
 
-  it('the old check-in switch still hides its card until Modules decides', () => {
-    mountWith(undefined, { checkIn: false })
+  it('the retired check-in stays off whatever a profile chose before', () => {
+    mountWith(undefined, { checkIn: true })
     expect(heads()).not.toContain('Check in')
-    mountWith({ checkin: true }, { checkIn: false })
-    expect(heads()).toContain('Check in')
+    mountWith({ checkin: true }, { checkIn: true })
+    expect(heads()).not.toContain('Check in')
   })
 })

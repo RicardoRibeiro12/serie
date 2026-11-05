@@ -7,7 +7,7 @@
 // and checks that each entry below really is a row there.
 import { t } from '../lib/i18n.js'
 import { ACCENT_NAMES } from '../lib/format.js'
-import { MODULES } from '../lib/modules.js'
+import { MODULES, RETIRED } from '../lib/modules.js'
 
 // `mod`: the module (lib/modules.js) a page belongs to; with it off the page and its rows are gone,
 // from the root and from the search alike (pageVisible, searchSettings).
@@ -97,7 +97,7 @@ const MODULE_KW = {
 }
 export const SEARCH = [
   // Modules
-  ...MODULES.map(m => ({ page: 'modules', title: m.title, icon: m.icon, tint: m.tint, kw: MODULE_KW[m.id] + ' module turn on off hide' })),
+  ...MODULES.filter(m => !RETIRED.has(m.id)).map(m => ({ page: 'modules', title: m.title, icon: m.icon, tint: m.tint, kw: MODULE_KW[m.id] + ' module turn on off hide' })),
   // Workout
   { page: 'workout', title: 'Automatic warm-ups', icon: 'sunrise', tint: 'var(--orange)', mod: 'plates', kw: 'warm-up warmup ramp automatic generator compounds' },
   { page: 'workout', title: 'Rest timer', icon: 'timer', tint: 'var(--orange)', kw: 'rest pause break seconds minutes timer countdown' },
