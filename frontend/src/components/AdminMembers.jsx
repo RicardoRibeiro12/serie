@@ -41,7 +41,9 @@ export default function AdminMembers() {
   const act = (userId, action) => api('/api/admin/cards', { method: 'POST', body: JSON.stringify({ userId, action }) }).then(load).catch(e => useUI.getState().toast(e.message))
 
   const max = report ? Math.max(1, ...report.perDay.map(p => p.n)) : 1
+  // Two sections, so the admin screen's wide layout can set them side by side (brand.css .adm-wide).
   return <>
+    <section className="adm-sec">
     <h2 className="sec-h">{t('Front desk')}</h2>
     <div className="card am-desk">
       <div className="row am-scan">
@@ -80,7 +82,9 @@ export default function AdminMembers() {
         </ul>
       </div>
     </>}
+    </section>
 
+    <section className="adm-sec">
     <h2 className="sec-h">{t('Members and cards')}</h2>
     <div className="card am-list">
       {!members && <div className="small dim">{t('Loading…')}</div>}
@@ -99,5 +103,6 @@ export default function AdminMembers() {
       </div>)}
       {members && <div className="small dim am-foot">{tn('{0} member', '{0} members', members.length)} · <a href="#/painel">{t('Open the full dashboard')}</a></div>}
     </div>
+    </section>
   </>
 }

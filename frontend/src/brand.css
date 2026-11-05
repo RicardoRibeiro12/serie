@@ -212,3 +212,15 @@ body { font-family: var(--font-display); }
 .am-mem:first-child{border-top:0}
 .am-in{color:var(--green,#2e9d5b)}
 .am-foot{padding-top:10px}
+
+/* Admin screen on a big window (views/Admin.jsx .adm-wide): two columns up to 1280 px, the desk and
+   the entries beside the members and cards, the invites beside the users; heading, intro, totals,
+   the Coach and the activity log run across both. One column below 1000 px, as before. */
+@media (min-width:1000px){
+  #app .narrow.adm-wide{max-width:1280px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:20px;align-items:start}
+  #app .narrow.adm-wide>.hdr,#app .narrow.adm-wide>.adm-intro,#app .narrow.adm-wide>.tiles,
+  #app .narrow.adm-wide>.adm-coach-anchor,#app .narrow.adm-wide>:last-child{grid-column:1/-1}
+  #app .narrow.adm-wide>.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}
+  #app .narrow.adm-wide>.adm-sec>.sec-h:first-child{margin-top:4px}
+  #app .narrow.adm-wide>.card{margin-top:16px}
+}

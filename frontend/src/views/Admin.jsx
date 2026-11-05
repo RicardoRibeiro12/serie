@@ -369,7 +369,7 @@ export default function Admin() {
   const activeCount = (users || []).filter(u => u.lastSync && Date.now() - u.lastSync < 7 * 86400000).length
   const disabledCount = (users || []).filter(u => u.disabled).length
 
-  return <div className="narrow">
+  return <div className="narrow adm-wide">
     <div className="hdr">
       <button className="iconbtn" data-back="/settings/account" onClick={() => nav('/settings/account')} aria-label={t('Back')}><Icon name="chevronLeft" /></button>
       <div style={{ flex: 1, marginInlineStart: 12 }}><h1 style={{ margin: 0 }}>{t('Admin')}</h1>
