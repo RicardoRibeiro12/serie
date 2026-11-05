@@ -85,6 +85,7 @@ export default function Painel() {
           {[7, 30, 90].map(d => <button key={d} type="button" aria-pressed={days === d} onClick={() => setDays(d)}>{tn('{0} day', '{0} days', d)}</button>)}
         </div>
         <button type="button" className="pn-btn" onClick={load}><Icon name="reset" /> {t('Refresh')}</button>
+        <button type="button" className="pn-btn" onClick={() => nav('/rececao')}>{t('Front desk mode')}</button>
         <button type="button" className="pn-btn ghost" onClick={() => nav('/admin')}>{t('Back to the app')}</button>
       </div>
     </header>

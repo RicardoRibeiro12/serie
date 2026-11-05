@@ -48,6 +48,7 @@ export default function AdminMembers() {
     <div className="card am-desk">
       <div className="row am-scan">
         <Button variant="primary" icon="qr" onClick={camera}>{t('Scan a card')}</Button>
+        <Button variant="tinted" onClick={() => { window.location.hash = '#/rececao' }}>{t('Front desk mode')}</Button>
         <form className="row am-num" onSubmit={e => { e.preventDefault(); if (num.trim()) scan(num.trim()) }}>
           <input className="input tnum" aria-label={t('Member number')} placeholder="S-000001" value={num} onChange={e => setNum(e.target.value)} />
           <Button type="submit" variant="tinted" disabled={!num.trim()}>{t('Check in or out')}</Button>

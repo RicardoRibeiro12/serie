@@ -80,7 +80,7 @@ const PAGE_TITLES = [
   ['/history', () => t('History')], ['/library', () => t('Exercises')], ['/muscles', () => t('Muscles')],
   ['/structural-balance', () => t('Structural balance')], ['/progress-photos', () => t('Progress photos')],
   ['/measurements', () => t('Body measurements')], ['/checkin', () => t('Check in')], ['/settings', () => t('Settings')],
-  ['/coach', () => t('Coach')], ['/admin', () => t('Admin dashboard')], ['/trainer', () => t('Students')], ['/card', () => t('Membership card')], ['/painel', () => t('Dashboard')], ['/data-consent', () => t('Privacy and health data')]
+  ['/coach', () => t('Coach')], ['/admin', () => t('Admin dashboard')], ['/trainer', () => t('Students')], ['/card', () => t('Membership card')], ['/painel', () => t('Dashboard')], ['/data-consent', () => t('Privacy and health data')], ['/rececao', () => t('Front desk mode')]
 ]
 const pageTitle = path => (PAGE_TITLES.find(([p]) => path === p || path.startsWith(p + '/'))?.[1] || (() => t('Home')))()
 const Admin = lazyView(() => import('./views/Admin.jsx'))
@@ -89,6 +89,7 @@ const TrainerStudent = lazyView(() => import('./views/TrainerStudent.jsx'))
 const MemberCard = lazyView(() => import('./views/MemberCard.jsx'))
 const Painel = lazyView(() => import('./views/Painel.jsx'))
 const DataConsent = lazyView(() => import('./views/DataConsent.jsx'))
+const Rececao = lazyView(() => import('./views/Rececao.jsx'))
 const CoachChat = lazyView(() => import('./views/CoachChat.jsx'))
 const Measurements = lazyView(() => import('./views/Measurements.jsx'))
 const CoachIntake = lazyView(() => import('./views/CoachIntake.jsx'))
@@ -305,7 +306,7 @@ function Shell() {
   }, [inWorkout])
   // The chat owns the bottom of the screen as well: its composer sits where the tabs would be.
   // The first-launch card has no tabs either: they changed the route behind it.
-  const noTabs = inWorkout || loc.pathname === '/coach' || loc.pathname === '/painel' || needsMobileOnboarding || permSteps
+  const noTabs = inWorkout || loc.pathname === '/coach' || loc.pathname === '/painel' || loc.pathname === '/rececao' || needsMobileOnboarding || permSteps
 
   const authed = user || isGuest
   // The first setup is through (sign-in or "Use on this device", and the phone's permission
@@ -378,6 +379,7 @@ function Shell() {
       <Route path="/card" element={<MemberCard />} />
       <Route path="/painel" element={<Painel />} />
       <Route path="/data-consent" element={<DataConsent />} />
+      <Route path="/rececao" element={<Rececao />} />
       <Route path="/trainer/:id" element={user?.trainer ? <TrainerStudent /> : <Navigate to="/home" replace />} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
@@ -407,7 +409,8 @@ function Shell() {
       {user && config?.consent && !user.consentTerms && <ConsentGate />}
       <Toast />
       <TimerFlash />
-      {tour && authed && <Suspense fallback={null}><Tour /></Suspense>}
+      {/* Not over the desk screens: front desk mode and the dashboard stay usable at the reception. */}
+      {tour && authed && loc.pathname !== '/rececao' && loc.pathname !== '/painel' && <Suspense fallback={null}><Tour /></Suspense>}
       {/* Seasonal decoration (lib/seasonal.js): nothing, and nothing loaded, out of season. Never
           over a running workout or the first-launch screens. */}
       {authed && !needsMobileOnboarding && !permSteps && <SeasonalLayer hidden={inWorkout || loc.pathname === '/workout'} />}

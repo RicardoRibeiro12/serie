@@ -4,6 +4,19 @@
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "Card not recognised": "Cartão não reconhecido",
+  "Card suspended": "Cartão suspenso",
+  "Could not read the card": "Não foi possível ler o cartão",
+  "Front desk mode": "Modo recepção",
+  "On the way in and on the way out.": "À entrada e à saída.",
+  "Reader or member number": "Leitor ou número de sócio",
+  "See you soon, {0}": "Até breve, {0}",
+  "Send them to the front desk.": "Encaminhe para a recepção.",
+  "Show your card’s QR": "Mostre o QR do seu cartão",
+  "Sound off": "Som desligado",
+  "Sound on": "Som ligado",
+  "This card is not from this gym, or it has a new QR.": "Este cartão não é desta academia, ou tem um QR novo.",
+  "Use the camera": "Usar a câmera",
   "Muscle group": "Grupo muscular",
   "Search in {0}": "Buscar em {0}",
   "The first {0} of {1}. Type to narrow it down.": "Os primeiros {0} de {1}. Digite para filtrar.",

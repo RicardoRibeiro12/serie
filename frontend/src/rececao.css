@@ -1,0 +1,26 @@
+/* Front desk mode (views/Rececao.jsx): seen from a few metres away, so big type and whole-screen
+   colour for each answer; the brand's dark everywhere else. */
+.rc{position:fixed;inset:0;z-index:50;display:grid;grid-template-rows:auto 1fr auto;background:#0f0f0e;color:#f2f0ea;font-family:var(--font-display)}
+.rc-in{background:#14532d}
+.rc-out{background:#1e3a5f}
+.rc-bad{background:#7f1d1d}
+.rc-gate{display:grid;place-content:center;text-align:center;padding:24px}
+.rc-bar{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;padding:16px clamp(16px,3vw,32px)}
+.rc-gym{display:flex;align-items:center;gap:10px;font-weight:800;font-stretch:75%;text-transform:uppercase;font-size:1.3rem;letter-spacing:.02em}
+.rc-mark{width:12px;height:26px;background:#ff6b2c}
+.rc-tools{display:flex;gap:8px;flex-wrap:wrap}
+.rc-btn{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid rgba(242,240,234,.2);background:rgba(242,240,234,.06);color:#f2f0ea;font:inherit;font-size:.9rem;font-weight:600;cursor:pointer}
+.rc-btn[aria-pressed="false"]{opacity:.6}
+.rc-btn:focus-visible{outline:2px solid #ff6b2c;outline-offset:2px}
+.rc-main{display:grid;place-items:center;text-align:center;padding:16px}
+.rc-idle,.rc-result{display:flex;flex-direction:column;align-items:center;gap:14px;max-width:90vw}
+.rc-qr{width:clamp(96px,16vw,160px);height:clamp(96px,16vw,160px);border-radius:24px;display:grid;place-items:center;background:rgba(255,107,44,.14);color:#ff6b2c;font-size:clamp(56px,9vw,96px)}
+.rc-icon{width:clamp(110px,18vw,180px);height:clamp(110px,18vw,180px);border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.15);font-size:clamp(64px,11vw,110px);font-weight:800;line-height:1}
+.rc-title{font-size:clamp(2rem,6vw,4.5rem);font-weight:800;font-stretch:80%;line-height:1.05;overflow-wrap:anywhere}
+.rc-sub{font-size:clamp(1rem,2.4vw,1.6rem);opacity:.85;font-variant-numeric:tabular-nums}
+.rc-foot{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-end;padding:16px clamp(16px,3vw,32px) 22px;font-size:1.05rem}
+.rc-count{font-size:2.2rem;font-weight:800;font-variant-numeric:tabular-nums;margin-right:4px}
+.rc-form{display:flex;flex-direction:column;gap:4px;min-width:min(320px,100%)}
+.rc-label{font-size:.8rem;opacity:.7}
+.rc-input{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid rgba(242,240,234,.25);background:rgba(0,0,0,.25);color:#f2f0ea;font-family:var(--font-mono);font-size:1rem;letter-spacing:.06em}
+.rc-input:focus{outline:2px solid #ff6b2c;outline-offset:1px}
