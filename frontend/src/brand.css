@@ -224,3 +224,9 @@ body { font-family: var(--font-display); }
   #app .narrow.adm-wide>.adm-sec>.sec-h:first-child{margin-top:4px}
   #app .narrow.adm-wide>.card{margin-top:16px}
 }
+
+/* Exercise pictures in the trainer's plan editor (components/TrainerPlanEditor.jsx). */
+.tp-exhead{display:flex;align-items:center;gap:12px;min-width:0}
+.tp-exhead .thumb,.tp-hit .thumb{width:48px;height:48px;flex:none;border-radius:10px;object-fit:cover;background:var(--surface-2)}
+.tp-hit{align-items:center}
+.tp-hitname{flex:1;min-width:0}

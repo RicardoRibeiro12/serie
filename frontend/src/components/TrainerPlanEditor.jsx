@@ -1,6 +1,6 @@
 // The trainer writes a plan for one student here, apart from their own plan: routines of
 // exercises with sets, reps, rest and a note. No weekdays: the student chooses when to train each
-// routine. Saved as a plan file (lib/plan-share.js format) in the student's library on the server
+// routine, each exercise with its picture, as in the trainer's own picker. Saved as a plan file (lib/plan-share.js format) in the student's library on the server
 // (api/trainer.js makeLibraryPlan). A routine from the trainer's own plan can be copied in as a start.
 import { useMemo, useState } from 'react'
 import { useStore } from '../store/useStore.js'
@@ -10,6 +10,7 @@ import { t } from '../lib/i18n.js'
 import { uid, todayISO, exerciseNameText } from '../lib/format.js'
 import { CATALOGUE, EXIDX, searchExercises } from '../lib/exercises.js'
 import { Button } from './ui.jsx'
+import { Thumb } from './Media.jsx'
 
 const KEEP = ['id', 'sets', 'reps', 'repsMin', 'restSec', 'note', 'mode', 'sec', 'min', 'weight', 'sg', 'sgName', 'sgRest', 'side', 'prog', 'inc']
 const fromRoutine = r => ({ id: uid(), name: r.name || '', ex: (r.ex || []).filter(e => EXIDX[e.id]).map(e => Object.fromEntries(KEEP.filter(k => e[k] != null).map(k => [k, e[k]]))) })
@@ -56,7 +57,7 @@ export default function TrainerPlanEditor({ student, initial, done }) {
       </div>
       {r.ex.length > 0 && <ol className="tp-exlist">
         {r.ex.map((e, k) => <li key={k} className="tp-ex">
-          <div className="tp-exname">{exerciseNameText(EXIDX[e.id])}</div>
+          <div className="tp-exhead"><Thumb ex={EXIDX[e.id]} /><div className="tp-exname">{exerciseNameText(EXIDX[e.id])}</div></div>
           <div className="tp-exnums">
             <label className="tp-num"><span className="small dim">{t('Sets')}</span><input className="input tnum" inputMode="numeric" value={e.sets ?? ''} onChange={ev => setEx(i, k, x => ({ ...x, sets: clampInt(ev.target.value, 1, 20) }))} /></label>
             <label className="tp-num"><span className="small dim">{t('Reps')}</span><input className="input tnum" inputMode="numeric" value={e.reps ?? ''} onChange={ev => setEx(i, k, x => ({ ...x, reps: clampInt(ev.target.value, 1, 100) }))} /></label>
@@ -104,7 +105,7 @@ function ExerciseFinder({ onPick }) {
     <input className="input" type="search" aria-label={t('Add an exercise')} placeholder={t('Add an exercise: search by name or muscle')} value={q} onChange={e => setQ(e.target.value)} />
     {hits.length > 0 && <ul className="tp-hits">
       {hits.map(ex => <li key={ex.id}><button type="button" className="tp-hit" onClick={() => { onPick(ex.id); setQ('') }}>
-        <span>{exerciseNameText(ex)}</span><span className="small dim capitalize">{ex.bp ? t(ex.bp) : ''}</span>
+        <Thumb ex={ex} /><span className="tp-hitname">{exerciseNameText(ex)}</span><span className="small dim capitalize">{ex.bp ? t(ex.bp) : ''}</span>
       </button></li>)}
     </ul>}
   </div>

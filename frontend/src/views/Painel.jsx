@@ -100,7 +100,7 @@ export default function Painel() {
         <Kpi label={t('Average stay')} value={view.avgMin != null ? view.avgMin : '–'} unit={view.avgMin != null ? 'min' : ''} note={t('closed visits only')} />
       </section>
 
-      <section className="pn-row">
+      <section className="pn-row pn-charts">
         <div className="pn-panel pn-wide">
           <div className="pn-head"><h2>{t('Entries per day')}</h2><span className="pn-sub">{tn('last {0} day', 'last {0} days', days)}</span></div>
           <div className="pn-bars" role="img" aria-label={t('Entries per day') + ': ' + view.perDay.map(p => dm(p.d) + ' ' + p.n).join(', ')}>
