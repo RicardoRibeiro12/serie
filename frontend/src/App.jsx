@@ -79,12 +79,13 @@ const PAGE_TITLES = [
   ['/history', () => t('History')], ['/library', () => t('Exercises')], ['/muscles', () => t('Muscles')],
   ['/structural-balance', () => t('Structural balance')], ['/progress-photos', () => t('Progress photos')],
   ['/measurements', () => t('Body measurements')], ['/checkin', () => t('Check in')], ['/settings', () => t('Settings')],
-  ['/coach', () => t('Coach')], ['/admin', () => t('Admin dashboard')], ['/trainer', () => t('Students')]
+  ['/coach', () => t('Coach')], ['/admin', () => t('Admin dashboard')], ['/trainer', () => t('Students')], ['/card', () => t('Membership card')]
 ]
 const pageTitle = path => (PAGE_TITLES.find(([p]) => path === p || path.startsWith(p + '/'))?.[1] || (() => t('Home')))()
 const Admin = lazyView(() => import('./views/Admin.jsx'))
 const Trainer = lazyView(() => import('./views/Trainer.jsx'))
 const TrainerStudent = lazyView(() => import('./views/TrainerStudent.jsx'))
+const MemberCard = lazyView(() => import('./views/MemberCard.jsx'))
 const CoachChat = lazyView(() => import('./views/CoachChat.jsx'))
 const Measurements = lazyView(() => import('./views/Measurements.jsx'))
 const CoachIntake = lazyView(() => import('./views/CoachIntake.jsx'))
@@ -371,6 +372,7 @@ function Shell() {
       {isOn(S, 'coach') && <Route path="/coach/setup" element={<CoachSetup />} />}
       <Route path="/admin" element={user?.admin ? <Admin /> : <Navigate to="/home" replace />} />
       <Route path="/trainer" element={user?.trainer ? <Trainer /> : <Navigate to="/home" replace />} />
+      <Route path="/card" element={<MemberCard />} />
       <Route path="/trainer/:id" element={user?.trainer ? <TrainerStudent /> : <Navigate to="/home" replace />} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>

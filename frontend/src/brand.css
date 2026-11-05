@@ -145,3 +145,52 @@ body { font-family: var(--font-display); }
 .tp-copy{flex:1 1 200px;width:auto}
 .tp-card .ts-plans{margin-top:12px}
 .tp-assess{margin-top:6px}
+
+/* Membership card (views/MemberCard.jsx): a bank-card shape, 85.6 × 54 mm, dark in both themes */
+.mc-card{position:relative;aspect-ratio:1.586;max-width:440px;margin:4px auto 10px;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,#1d1c19 0%,#141412 60%,#2a1a10 100%);color:#f2f0ea;box-shadow:0 12px 30px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.06);overflow:hidden}
+.mc-card::after{content:'';position:absolute;inset:auto -20% -55% auto;width:70%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,107,44,.28),transparent 65%);pointer-events:none}
+.mc-off{filter:grayscale(1);opacity:.75}
+.mc-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.mc-gym{font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:.95rem}
+.mc-status{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px}
+.mc-status.on{background:#2e9d5b;color:#fff}
+.mc-status.off{background:#d64545;color:#fff}
+.mc-body{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;position:relative;z-index:1}
+.mc-who{display:flex;gap:12px;align-items:center;min-width:0}
+.mc-ini{width:52px;height:52px;flex:none;border-radius:50%;display:grid;place-items:center;background:#ff6b2c;color:#0f0f0e;font-weight:800;font-size:1.1rem}
+.mc-name{font-weight:700;font-size:1.05rem;line-height:1.2;overflow-wrap:anywhere}
+.mc-role{font-size:.78rem;opacity:.7}
+.mc-num{font-family:var(--font-mono);font-size:.85rem;letter-spacing:.08em;margin-top:4px}
+.mc-qr{flex:none;background:#fff;padding:6px;border-radius:10px;width:clamp(86px,28vw,124px);aspect-ratio:1;display:grid;place-items:center;color:#0f0f0e}
+.mc-qr canvas{width:100%;height:100%;image-rendering:pixelated}
+.mc-hint{text-align:center;margin:0 auto 12px;max-width:440px}
+.mc-visit .ttl{margin-bottom:10px}
+.mc-acts{gap:8px;flex-wrap:wrap}
+.mc-acts .btn{flex:1 1 140px}
+.mc-tile{width:100%;text-align:start;border:0;font:inherit;color:inherit;cursor:pointer;display:flex;align-items:center;gap:12px}
+.mc-tile-copy{display:flex;flex-direction:column;min-width:0}
+
+/* Admin: front desk, entries and exits, members and cards (components/AdminMembers.jsx) */
+.sec-h{font-size:var(--fs-footnote);text-transform:uppercase;letter-spacing:.08em;color:var(--label-2,inherit);margin:22px 4px 8px}
+.am-scan{gap:10px;flex-wrap:wrap;align-items:center}
+.am-num{gap:8px;flex:1 1 260px}
+.am-num .input{flex:1 1 140px;min-height:44px;min-width:0}
+.am-num .btn{flex:0 0 auto;width:auto}
+.am-scan>.btn{width:auto}
+.am-last{margin-top:12px;padding:10px 12px;border-radius:var(--r);font-weight:600}
+.am-last.ok{background:color-mix(in srgb,var(--green,#2e9d5b) 16%,transparent)}
+.am-last.bad{background:color-mix(in srgb,var(--red,#d64545) 16%,transparent)}
+.am-sum{gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.am-big{font-size:1.6rem;font-weight:700}
+.am-bars{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;height:130px;align-items:end;margin:6px 0 10px}
+.am-bar{display:grid;grid-template-rows:auto 1fr auto;height:100%;text-align:center;min-width:0}
+.am-bar-fill{align-self:end;background:var(--acc);border-radius:4px 4px 0 0;min-height:2px}
+.am-bar-n{font-size:var(--fs-caption2);color:var(--label-2,inherit)}
+.am-bar-d{font-size:var(--fs-caption2);color:var(--label-3,inherit);white-space:nowrap;overflow:hidden}
+.am-present{margin:6px 0}
+.am-visits{list-style:none;margin:8px 0 0;padding:0}
+.am-visits li{padding:7px 0;border-top:var(--hair) solid var(--sep);gap:12px}
+.am-mem{padding:10px 0;border-top:var(--hair) solid var(--sep);gap:10px;flex-wrap:wrap}
+.am-mem:first-child{border-top:0}
+.am-in{color:var(--green,#2e9d5b)}
+.am-foot{padding-top:10px}

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Painel · Série</title>
+<link rel="icon" href="../favicon.ico">
+<link rel="stylesheet" href="painel.css">
+<script src="painel.js" defer></script>
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><span class="mark" aria-hidden="true"></span><span data-t="Dashboard">Painel</span> <span class="gym" id="gym"></span></div>
+  <div class="tools">
+    <label class="sr" for="days" data-t="Period">Período</label>
+    <select id="days">
+      <option value="7" data-t="Last 7 days">Últimos 7 dias</option>
+      <option value="14" selected data-t="Last 14 days">Últimos 14 dias</option>
+      <option value="30" data-t="Last 30 days">Últimos 30 dias</option>
+      <option value="90" data-t="Last 90 days">Últimos 90 dias</option>
+    </select>
+    <button type="button" id="refresh" data-t="Refresh">Atualizar</button>
+    <a class="ghost" href="../#/admin" data-t="Back to the app">Voltar à app</a>
+  </div>
+</header>
+
+<main id="main">
+  <div id="gate" class="gate" hidden>
+    <h1 data-t="Sign in first">Inicia sessão primeiro</h1>
+    <p data-t="This dashboard uses your admin session from the app.">Este painel usa a tua sessão de administrador da app.</p>
+    <a class="btn" href="../" data-t="Open the app">Abrir a app</a>
+  </div>
+
+  <section id="app" hidden>
+    <div class="kpis">
+      <div class="kpi"><div class="l" data-t="In the gym now">No ginásio agora</div><div class="v" id="k-now">–</div></div>
+      <div class="kpi"><div class="l" data-t="Entries">Entradas</div><div class="v" id="k-entries">–</div></div>
+      <div class="kpi"><div class="l" data-t="Members who came">Sócios que vieram</div><div class="v" id="k-members">–</div></div>
+      <div class="kpi"><div class="l" data-t="Average stay">Tempo médio</div><div class="v" id="k-avg">–</div></div>
+      <div class="kpi"><div class="l" data-t="Users">Utilizadores</div><div class="v" id="k-users">–</div></div>
+      <div class="kpi"><div class="l" data-t="Active 7 days">Ativos 7 dias</div><div class="v" id="k-active">–</div></div>
+    </div>
+
+    <div class="grid">
+      <section class="panel wide">
+        <h2 data-t="Entries per day">Entradas por dia</h2>
+        <div id="chart-days" class="chart" role="img"></div>
+      </section>
+      <section class="panel">
+        <h2 data-t="Busiest hours">Horas de maior movimento</h2>
+        <div id="chart-hours" class="hours" role="img"></div>
+      </section>
+      <section class="panel">
+        <h2 data-t="In the gym now">No ginásio agora</h2>
+        <ul id="present" class="plain"></ul>
+        <form id="desk" class="desk">
+          <label for="desk-num" data-t="Front desk: member number or QR text">Receção: número de sócio ou texto do QR</label>
+          <div class="row"><input id="desk-num" autocomplete="off" placeholder="S-000001"><button type="submit" data-t="Check in or out">Entrada ou saída</button></div>
+          <div id="desk-out" class="desk-out" role="status"></div>
+        </form>
+      </section>
+    </div>
+
+    <section class="panel">
+      <div class="head">
+        <h2 data-t="Entries and exits">Entradas e saídas</h2>
+        <div class="row">
+          <input id="filter" type="search" data-tp="Filter by name" placeholder="Filtrar por nome">
+          <button type="button" id="csv" data-t="Export CSV">Exportar CSV</button>
+        </div>
+      </div>
+      <div class="scroll"><table id="visits"><thead><tr>
+        <th data-t="Member">Sócio</th><th data-t="Date">Data</th><th data-t="Entry">Entrada</th><th data-t="Exit">Saída</th><th data-t="Duration">Duração</th><th data-t="How">Como</th>
+      </tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <section class="panel">
+      <h2 data-t="Members and cards">Sócios e cartões</h2>
+      <div class="scroll"><table id="members"><thead><tr>
+        <th data-t="Member">Sócio</th><th data-t="Card">Cartão</th><th data-t="State">Estado</th><th data-t="Last sync">Última sincronização</th><th></th>
+      </tr></thead><tbody></tbody></table></div>
+    </section>
+  </section>
+</main>
+</body>
+</html>

@@ -44,6 +44,7 @@ import { integrationRoutes } from './integrations/routes.js';
 import { excusedOn, nudgeFor, nudgeWindowOpen, toneOf } from './nudge.js';
 import { verifyEdgeSignature, edgeClientIp } from './edge-proxy.js';
 import { isTrainer, studentsOf, offerFor, makeOffer, putOffer, dropOffer, forgetUser, makeAssessment, assessmentsFor, assessmentHistory, addAssessment, dropAssessments, plansFor, makeLibraryPlan, putLibraryPlan, dropLibraryPlan, progressOf } from './trainer.js';
+import { cardOf, cardByCode, issueCard, setCardStatus, checkInOut, openVisit, closeStale, visitReport, forgetMember, qrText, codeFromQr } from './members.js';
 import { wrappedPushYear, wrappedSummary, wrappedPushOwed, wrappedPush } from './wrapped.js';
 
 const PORT = +(process.env.PORT || 3000);
@@ -165,7 +166,10 @@ db.invites = db.invites || [];
 db.deviceLinks = db.deviceLinks || [];
 db.planOffers = db.planOffers || [];   // plans a trainer sent, waiting for the student (trainer.js)
 db.assessments = db.assessments || [];
-db.studentPlans = db.studentPlans || [];   // each student's plan library, written by their trainer (trainer.js)   // a trainer's check-in measurements, waiting for the student's app   // unused one-time device links, hashed (device-link.js)
+db.studentPlans = db.studentPlans || [];
+db.memberCards = db.memberCards || [];   // membership cards (members.js)
+db.visits = db.visits || [];   // gym entries and exits (members.js)
+const GYM_NAME = (process.env.GYM_NAME || 'Série').slice(0, 60);   // each student's plan library, written by their trainer (trainer.js)   // a trainer's check-in measurements, waiting for the student's app   // unused one-time device links, hashed (device-link.js)
 const isAdmin = user => !!user && (user.admin === true || ADMIN_UIDS.includes(user.id));
 // One owner per instance, any number of admins. Admins run the place day to day (users, invites,
 // the Coach); the owner is the one admin the others cannot act on: only the owner appoints or
@@ -1353,6 +1357,7 @@ async function removeEmail(req, res, user, body) {
 function removeAccount(u) {
   db.users = db.users.filter(x => x.id !== u.id);
   forgetUser(db, u.id);
+  forgetMember(db, u.id);
   db.creds = (db.creds || []).filter(c => c.userId !== u.id);
   db.subs = (db.subs || []).filter(x => x.userId !== u.id);
   dropDeviceLinks(db, u.id);
@@ -3147,6 +3152,85 @@ const routes = {
     if (!dropOffer(db, me.id, text(body.id))) return json(res, 404, { error: 'no such plan' });
     saveDb();
     json(res, 200, { ok: true });
+  },
+
+  /* ---------- membership card and entries/exits (members.js) ---------- */
+  // The signed-in profile's card, if the gym issued one, and whether they are in the gym now.
+  'GET /api/card': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    if (closeStale(db)) saveDb();
+    const card = cardOf(db, me.id);
+    if (!card) return json(res, 200, { card: null });
+    const open = openVisit(db, me.id);
+    json(res, 200, { card: { number: card.number, qr: qrText(card), status: card.status, since: card.created, name: me.name, gym: GYM_NAME, role: isTrainer(me) ? 'trainer' : me.trainerId ? 'student' : 'member' }, inside: open ? open.in : null });
+  },
+
+  // The member's own Check-in / Check-out buttons.
+  'POST /api/checkin': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    if (body.dir !== 'in' && body.dir !== 'out') return json(res, 400, { error: 'dir must be in or out' });
+    const r = checkInOut(db, { uid: me.id, dir: body.dir, by: 'self', id: crypto.randomBytes(9).toString('base64url') });
+    if (r.error) return json(res, r.error === 'no card' ? 404 : 409, { error: r.error });
+    saveDb();
+    json(res, 200, { ok: true, dir: r.dir, at: r.dir === 'in' ? r.visit.in : r.visit.out });
+  },
+
+  // Every profile with its card (or none) and whether it is in the gym now.
+  'GET /api/admin/cards': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    if (closeStale(db)) saveDb();
+    const members = db.users.filter(u => !u.guest).map(u => {
+      const c = cardOf(db, u.id);
+      const open = openVisit(db, u.id);
+      return { id: u.id, name: u.name, disabled: !!u.disabled, card: c ? { number: c.number, status: c.status, created: c.created, qr: qrText(c) } : null, inside: open ? open.in : null };
+    });
+    json(res, 200, { gym: GYM_NAME, members });
+  },
+
+  // issue (or reissue: a new QR code, the old one stops working), suspend, activate.
+  'POST /api/admin/cards': async (req, res) => {
+    const admin = requireAdmin(req, res);
+    if (!admin) return;
+    const body = await readBody(req);
+    const u = db.users.find(x => x.id === body.userId);
+    if (!u) return json(res, 404, { error: 'no such profile' });
+    let card;
+    if (body.action === 'issue') card = issueCard(db, { uid: u.id, code: crypto.randomBytes(18).toString('base64url') });
+    else if (body.action === 'suspend' || body.action === 'activate') {
+      const r = setCardStatus(db, u.id, body.action === 'suspend' ? 'suspended' : 'active');
+      if (r.error) return json(res, 400, { error: r.error });
+      card = r.card;
+    } else return json(res, 400, { error: 'action must be issue, suspend or activate' });
+    saveDb();
+    audit(req, 'admin.card', { user: admin, target: u, msg: body.action + ' ' + card.number });
+    json(res, 200, { ok: true, card: { number: card.number, status: card.status } });
+  },
+
+  // The desk scans a card: in if the member is out, out if they are in.
+  'POST /api/admin/scan': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const body = await readBody(req);
+    const raw = text(body.qr);
+    const card = cardByCode(db, codeFromQr(raw)) || (/^S-\d{6}$/i.test(raw.trim()) ? (db.memberCards || []).find(c => c.number === raw.trim().toUpperCase()) : null);
+    if (!card) return json(res, 404, { error: 'unknown card' });
+    const u = db.users.find(x => x.id === card.uid);
+    const r = checkInOut(db, { uid: card.uid, dir: 'toggle', by: 'desk', id: crypto.randomBytes(9).toString('base64url') });
+    if (r.error) return json(res, 409, { error: r.error, name: u ? u.name : null, number: card.number, status: card.status });
+    saveDb();
+    json(res, 200, { ok: true, dir: r.dir, name: u ? u.name : null, number: card.number, at: r.dir === 'in' ? r.visit.in : r.visit.out });
+  },
+
+  // Entries and exits: who is in now, the last days' visits and the entries per day.
+  'GET /api/admin/visits': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const days = Math.max(1, Math.min(90, +new URL(req.url, 'http://x').searchParams.get('days') || 14));
+    const nameOf = uid => (db.users.find(u => u.id === uid) || {}).name || null;
+    const report = visitReport(db, { days, nameOf });
+    saveDb();
+    json(res, 200, { gym: GYM_NAME, days, ...report });
   },
 
   /* ---------- activity log ---------- */

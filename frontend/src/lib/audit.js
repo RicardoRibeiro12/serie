@@ -79,6 +79,8 @@ const LABELS = {
   'trainer.plan.send': 'A trainer sent a plan',
   'trainer.assessment': 'A trainer recorded a check-in',
   'admin.audit.clear': 'Cleared the activity log',
+  // Membership cards (api/members.js): issued, reissued with a new QR, suspended or reactivated.
+  'admin.card': 'Changed a membership card',
   // FIRST_USER_ADMIN=1: the first profile on a fresh instance is made admin as it signs up.
   'admin.first-user': 'Became admin as the first profile',
   'admin.denied': 'Blocked from an admin action',

@@ -174,6 +174,8 @@ tags:
       404 when the instance runs with `MEDIA_UPLOADS=0`.
   - name: trainer
     description: Trainers (PT) sending plans to their students
+  - name: members
+    description: Membership cards, gym entries and exits
   - name: coach
     description: >-
       AI Coach: plans, reviews and debriefs. Every route here answers 503 unless the
@@ -3369,6 +3371,110 @@ paths:
                 properties:
                   plans: { type: array, items: { type: object } }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/card:
+    get:
+      tags: [members]
+      operationId: myCard
+      summary: 'Your membership card (number, QR text, status) and whether you are in the gym now'
+      responses:
+        '200':
+          description: The card, or null when the gym has not issued one.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  card: { type: object, nullable: true }
+                  inside: { type: string, nullable: true, description: Entry time of the open visit. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/checkin:
+    post:
+      tags: [members]
+      operationId: checkIn
+      summary: 'Check in to or out of the gym with your card'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dir]
+              properties:
+                dir: { type: string, enum: [in, out] }
+      responses:
+        '200': { description: Recorded. }
+        '400': { description: The request was not valid. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: No card. }
+        '409': { description: Card suspended, already in, or not in. }
+  /api/admin/cards:
+    get:
+      tags: [members]
+      operationId: adminCards
+      summary: 'Admin: every profile with its card and whether it is in the gym'
+      responses:
+        '200':
+          description: The members.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gym: { type: string }
+                  members: { type: array, items: { type: object } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [members]
+      operationId: adminCardAction
+      summary: 'Admin: issue or reissue a card (new QR), suspend or reactivate it'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, action]
+              properties:
+                userId: { type: string }
+                action: { type: string, enum: [issue, suspend, activate] }
+      responses:
+        '200': { description: Done. }
+        '400': { description: The request was not valid. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Not found. }
+  /api/admin/scan:
+    post:
+      tags: [members]
+      operationId: adminScan
+      summary: 'Desk: a scanned card (QR text or member number) checks in or out'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [qr]
+              properties:
+                qr: { type: string }
+      responses:
+        '200': { description: Checked in or out. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Unknown card. }
+        '409': { description: Card suspended. }
+  /api/admin/visits:
+    get:
+      tags: [members]
+      operationId: adminVisits
+      summary: 'Admin: entries and exits, who is in now, entries per day'
+      parameters:
+        - { name: days, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 90 } }
+      responses:
+        '200': { description: The report. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /api/assessments:
     get:
       tags: [trainer]
