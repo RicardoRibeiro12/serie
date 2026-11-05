@@ -19,6 +19,12 @@ const BR = {
   'tap to check in': 'toque para dar entrada',
   'show it at the front desk': 'mostre na recepção',
   'QR for the front desk': 'QR para a recepção',
+  'In the gym': 'Na academia',
+  'No trainers in this gym yet.': 'Ainda não há personais nesta academia.',
+  'Only the gym’s owner sees this page.': 'Só o dono da academia vê esta página.',
+  'Back to the app': 'Voltar ao app',
+  'Workouts logged': 'Treinos registrados',
+  'Personal trainers': 'Personal trainers',
   'Gym or trainer code (optional)': 'Código da academia ou do personal (opcional)',
   'If your gym or your trainer gave you a code, it puts you in their gym.': 'Se a academia ou o seu personal te deu um código, ele coloca você na academia.',
   'Show the QR at the front desk when you arrive and when you leave. If you forget on the way out, you are checked out at the end of the day.': 'Mostre o QR na recepção quando chegar e quando sair. Se esquecer na saída, ela fica registrada no fim do dia.'

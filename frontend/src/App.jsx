@@ -79,13 +79,14 @@ const PAGE_TITLES = [
   ['/history', () => t('History')], ['/library', () => t('Exercises')], ['/muscles', () => t('Muscles')],
   ['/structural-balance', () => t('Structural balance')], ['/progress-photos', () => t('Progress photos')],
   ['/measurements', () => t('Body measurements')], ['/checkin', () => t('Check in')], ['/settings', () => t('Settings')],
-  ['/coach', () => t('Coach')], ['/admin', () => t('Admin dashboard')], ['/trainer', () => t('Students')], ['/card', () => t('Membership card')]
+  ['/coach', () => t('Coach')], ['/admin', () => t('Admin dashboard')], ['/trainer', () => t('Students')], ['/card', () => t('Membership card')], ['/painel', () => t('Dashboard')]
 ]
 const pageTitle = path => (PAGE_TITLES.find(([p]) => path === p || path.startsWith(p + '/'))?.[1] || (() => t('Home')))()
 const Admin = lazyView(() => import('./views/Admin.jsx'))
 const Trainer = lazyView(() => import('./views/Trainer.jsx'))
 const TrainerStudent = lazyView(() => import('./views/TrainerStudent.jsx'))
 const MemberCard = lazyView(() => import('./views/MemberCard.jsx'))
+const Painel = lazyView(() => import('./views/Painel.jsx'))
 const CoachChat = lazyView(() => import('./views/CoachChat.jsx'))
 const Measurements = lazyView(() => import('./views/Measurements.jsx'))
 const CoachIntake = lazyView(() => import('./views/CoachIntake.jsx'))
@@ -302,7 +303,7 @@ function Shell() {
   }, [inWorkout])
   // The chat owns the bottom of the screen as well: its composer sits where the tabs would be.
   // The first-launch card has no tabs either: they changed the route behind it.
-  const noTabs = inWorkout || loc.pathname === '/coach' || needsMobileOnboarding || permSteps
+  const noTabs = inWorkout || loc.pathname === '/coach' || loc.pathname === '/painel' || needsMobileOnboarding || permSteps
 
   const authed = user || isGuest
   // The first setup is through (sign-in or "Use on this device", and the phone's permission
@@ -373,6 +374,7 @@ function Shell() {
       <Route path="/admin" element={user?.admin ? <Admin /> : <Navigate to="/home" replace />} />
       <Route path="/trainer" element={user?.trainer ? <Trainer /> : <Navigate to="/home" replace />} />
       <Route path="/card" element={<MemberCard />} />
+      <Route path="/painel" element={<Painel />} />
       <Route path="/trainer/:id" element={user?.trainer ? <TrainerStudent /> : <Navigate to="/home" replace />} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>

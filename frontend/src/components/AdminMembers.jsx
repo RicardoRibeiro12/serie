@@ -97,7 +97,7 @@ export default function AdminMembers() {
           {m.card && m.card.status !== 'active' && <Button size="sm" variant="tinted" onClick={() => act(m.id, 'activate')}>{t('Reactivate')}</Button>}
         </div>
       </div>)}
-      {members && <div className="small dim am-foot">{tn('{0} member', '{0} members', members.length)} · <a href="painel/index.html" target="_blank" rel="noopener">{t('Open the full dashboard')}</a></div>}
+      {members && <div className="small dim am-foot">{tn('{0} member', '{0} members', members.length)} · <a href="#/painel">{t('Open the full dashboard')}</a></div>}
     </div>
   </>
 }
