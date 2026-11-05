@@ -4166,4 +4166,10 @@ export default {
   "Sound on": "Sound on",
   "This card is not from this gym, or it has a new QR.": "This card is not from this gym, or it has a new QR.",
   "Use the camera": "Use the camera",
+  "Code for the front desk": "Code for the front desk",
+  "Entries, members and trainers": "Entries, members and trainers",
+  "Invites, cards and accounts": "Invites, cards and accounts",
+  "Only the gym’s owner or front desk sees this page.": "Only the gym’s owner or front desk sees this page.",
+  "Read the members’ cards at the door": "Read the members’ cards at the door",
+  "front desk": "front desk",
 }

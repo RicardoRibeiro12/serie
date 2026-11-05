@@ -3444,6 +3444,23 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Unknown card. }
         '409': { description: Card suspended. }
+  /api/desk/status:
+    get:
+      tags: [members]
+      operationId: deskStatus
+      summary: 'Front desk: the gym''s name and how many are inside'
+      responses:
+        '200':
+          description: The status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gym: { type: string }
+                  present: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /api/admin/visits:
     get:
       tags: [members]

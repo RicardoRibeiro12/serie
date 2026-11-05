@@ -251,3 +251,13 @@ body { font-family: var(--font-display); }
 .tp-groups .chip{flex:none;min-height:36px}
 .tp-hint{margin:6px 2px 0}
 @media (min-width:700px){.tp-groups{flex-wrap:wrap;overflow:visible}}
+
+/* On Home, the owner's work screens (components/GymOwnerCard.jsx) */
+.go-head{margin-bottom:10px}
+.go-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.go-item{display:flex;align-items:center;gap:12px;min-height:60px;padding:10px 12px;border:0;border-radius:12px;background:var(--surface-2);color:inherit;font:inherit;text-align:start;cursor:pointer}
+.go-item:hover{background:var(--surface-3)}
+.go-item:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.go-icon{background:var(--acc);color:var(--on-acc);flex:none}
+.go-copy{display:flex;flex-direction:column;min-width:0}
+.go-title{font-weight:600}

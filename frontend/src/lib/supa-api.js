@@ -104,6 +104,13 @@ async function me(fresh) {
   meCache = m
   return m
 }
+// The gym whose front desk this person may run: one they own, or one they are the desk account of.
+const deskGym = async () => {
+  const m = await me()
+  const g = (m.gyms || []).find(x => x.role === 'owner') || (m.gyms || []).find(x => x.role === 'desk')
+  if (!g) throw fail('forbidden', 403)
+  return g
+}
 const ownGym = async () => {
   const m = await me()
   const g = (m.gyms || []).find(x => x.role === 'owner')
@@ -112,7 +119,7 @@ const ownGym = async () => {
 }
 // consentTerms / consentHealth: when the person accepted the privacy policy and, separately, gave the
 // health-data consent (RGPD art. 9); null when not. components/Consent.jsx asks for what is missing.
-const userOf = m => ({ id: m.id, name: m.name, admin: !!m.admin, ...(m.owner ? { owner: true } : {}), ...(m.trainer ? { trainer: true } : {}), consentTerms: m.consentTerms || null, consentHealth: m.consentHealth || null })
+const userOf = m => ({ id: m.id, name: m.name, admin: !!m.admin, ...(m.owner ? { owner: true } : {}), ...(m.trainer ? { trainer: true } : {}), ...(m.desk ? { desk: true } : {}), consentTerms: m.consentTerms || null, consentHealth: m.consentHealth || null })
 // The privacy policy the consent refers to (landing/pages.mjs /privacidade/); bump it when the text changes.
 export const CONSENT_VERSION = '2026-11'
 const emailFor = name => {
@@ -273,7 +280,7 @@ const ROUTES = {
   'GET /api/admin/users': async () => {
     const g = await ownGym()
     const people = (await rpc('gym_people', { p_gym: g.id })) || []
-    return { users: people.map(p => ({ id: p.id, name: p.name, admin: !!p.admin, ...(p.owner ? { owner: true } : {}), ...(p.trainer ? { trainer: true } : {}), trainerId: p.trainerId || null, workouts: p.workouts, lastWorkout: p.lastWorkout, lastSync: p.lastSync ? Date.parse(p.lastSync) : null, live: null })), invite_only: false, gym: g.name }
+    return { users: people.map(p => ({ id: p.id, name: p.name, admin: !!p.admin, ...(p.owner ? { owner: true } : {}), ...(p.trainer ? { trainer: true } : {}), ...(p.desk ? { desk: true } : {}), trainerId: p.trainerId || null, workouts: p.workouts, lastWorkout: p.lastWorkout, lastSync: p.lastSync ? Date.parse(p.lastSync) : null, live: null })), invite_only: false, gym: g.name }
   },
   'GET /api/admin/user': async (b, path) => {
     const g = await ownGym()
@@ -327,7 +334,7 @@ const ROUTES = {
   },
   'POST /api/admin/invites/new': async b => {
     const g = await ownGym()
-    const inv = await rpc('create_invite', { p_role: b.role === 'trainer' ? 'trainer' : 'student', p_gym: g.id, p_trainer: null, p_gym_name: null })
+    const inv = await rpc('create_invite', { p_role: b.role === 'trainer' || b.role === 'desk' ? b.role : 'student', p_gym: g.id, p_trainer: null, p_gym_name: null })
     return { invite: { code: inv.code } }
   },
   'POST /api/admin/invites/revoke': async b => { await rest('invites?code=eq.' + encodeURIComponent(b.code), { method: 'DELETE' }); return ok },
@@ -343,7 +350,9 @@ const ROUTES = {
       : await rpc('set_card_status', { p_gym: g.id, p_user: b.userId, p_status: b.action === 'suspend' ? 'suspended' : 'active' })
     return { ok: true, card }
   },
-  'POST /api/admin/scan': async b => { const g = await ownGym(); return rpc('desk_scan', { p_gym: g.id, p_text: b.qr }) },
+  'POST /api/admin/scan': async b => { const g = await deskGym(); return rpc('desk_scan', { p_gym: g.id, p_text: b.qr }) },
+  // The front desk screen (views/Rececao.jsx): the gym's name and how many are inside.
+  'GET /api/desk/status': async () => { const g = await deskGym(); return rpc('desk_status', { p_gym: g.id }) },
   'GET /api/admin/visits': async (b, path) => {
     const g = await ownGym()
     const days = Math.max(1, Math.min(90, Number(q(path, 'days')) || 14))

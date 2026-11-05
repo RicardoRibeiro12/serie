@@ -347,7 +347,14 @@ function Shell() {
     </div>
   )
 
-  const view = l => (!authed ? <Login /> : needsMobileOnboarding ? <MobileOnboarding /> : permSteps ? <PermissionSteps /> : (
+  // A gym's front desk account (supabase/app.sql 'desk') has one screen: front desk mode.
+  const deskOnly = !!(user?.desk && !user?.admin && !user?.trainer)
+  const view = l => (!authed ? <Login /> : needsMobileOnboarding ? <MobileOnboarding /> : permSteps ? <PermissionSteps /> : deskOnly ? (
+    <Routes location={l}>
+      <Route path="/rececao" element={<Rececao />} />
+      <Route path="*" element={<Navigate to="/rececao" replace />} />
+    </Routes>
+  ) : (
     <Routes location={l}>
       <Route path="/home" element={<Home />} />
       {/* A module switched off (Settings → Modules, lib/modules.js) takes its screens with it: the

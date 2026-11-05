@@ -50,8 +50,9 @@ export default function Rececao() {
   const timer = useRef(null)
   const busy = useRef(false)
 
-  const refresh = () => api('/api/admin/visits?days=1').then(r => { setPresent(r.present.length); setGym(r.gym || '') }).catch(() => {})
-  useEffect(() => { if (me?.admin) refresh(); const iv = setInterval(refresh, 30000); return () => clearInterval(iv) }, [me?.admin])
+  const allowed = !!(me?.admin || me?.desk)
+  const refresh = () => api('/api/desk/status').then(r => { setPresent(r.present); setGym(r.gym || '') }).catch(() => {})
+  useEffect(() => { if (allowed) refresh(); const iv = setInterval(refresh, 30000); return () => clearInterval(iv) }, [allowed])
 
   // The reader types into whatever has the focus: keep it on the input, always.
   useEffect(() => {
@@ -86,7 +87,8 @@ export default function Rececao() {
 
   const camera = () => useUI.getState().openSheet(close => <CameraScan onCancel={close} onFound={c => { close(); read(c.value) }} />)
 
-  if (!me?.admin) return <div className="rc rc-gate"><h1>{t('Front desk mode')}</h1><p>{t('Only the gym’s owner sees this page.')}</p></div>
+  // The gym's owner, or its front desk account (supabase/app.sql 'desk'), which sees only this page.
+  if (!allowed) return <div className="rc rc-gate"><h1>{t('Front desk mode')}</h1><p>{t('Only the gym’s owner or front desk sees this page.')}</p></div>
 
   return <div className={'rc' + (result ? ' rc-' + result.kind : '')}>
     <header className="rc-bar">
@@ -94,7 +96,8 @@ export default function Rececao() {
       <div className="rc-tools">
         <button type="button" className="rc-btn" onClick={() => setSound(s => !s)} aria-pressed={sound}>{sound ? t('Sound on') : t('Sound off')}</button>
         <button type="button" className="rc-btn" onClick={camera}><Icon name="qr" /> {t('Use the camera')}</button>
-        <button type="button" className="rc-btn" onClick={() => nav('/painel')}>{t('Dashboard')}</button>
+        {me.admin && <button type="button" className="rc-btn" onClick={() => nav('/painel')}>{t('Dashboard')}</button>}
+        {!me.admin && <button type="button" className="rc-btn" onClick={() => useStore.getState().signOut()}>{t('Sign out')}</button>}
       </div>
     </header>
 

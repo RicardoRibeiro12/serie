@@ -67,6 +67,8 @@ function StudentTrainer({ id, name, people, onChanged }) {
   const trainers = people.filter(p => p.trainer && p.id !== id)
   const [value, setValue] = useState((people.find(p => p.id === id) || {}).trainerId || '')
   const [busy, setBusy] = useState(false)
+  // The front desk account trains with no one: no PT to pick.
+  if ((people.find(p => p.id === id) || {}).desk) return null
   const change = async next => {
     setBusy(true)
     try {
@@ -268,7 +270,7 @@ function InvitesCard({ invites, reload, inviteOnly }) {
   const used = (invites || []).filter(i => i.usedBy)
   return <div className="card">
     <div className="row between"><h2 style={{ margin: 0 }}>{t('Invite codes')}</h2>
-      <div className="row" style={{ gap: 6 }}>{config?.backend === 'supabase' && <Button size="sm" onClick={() => gen('trainer')}>{t('Code for a PT')}</Button>}<Button variant="primary" size="sm" onClick={() => gen()} icon="plus">{t('New code')}</Button></div></div>
+      <div className="row" style={{ gap: 6 }}>{config?.backend === 'supabase' && <><Button size="sm" onClick={() => gen('desk')}>{t('Code for the front desk')}</Button><Button size="sm" onClick={() => gen('trainer')}>{t('Code for a PT')}</Button></>}<Button variant="primary" size="sm" onClick={() => gen()} icon="plus">{t('New code')}</Button></div></div>
     <div className="adm-lead">
       {inviteOnly
         ? t('Sign-up is invite-only: someone needs one of these codes to create a profile. Each code works once.')
@@ -447,7 +449,7 @@ export default function Admin() {
       <div className="adm-lead">{t('Everyone with a profile on this instance. Tap one to see their activity, to disable the account (nothing is deleted) or to delete it with all their data for good.')}</div>
       <div className="list">
         {(users || []).map(u => <div key={u.id} className="item" onClick={() => openUser(u.id)} style={u.disabled ? { opacity: .55 } : null}>
-          <div className="grow"><div className="tt">{u.live && <Icon name="dot" style={{ fontSize: 9, color: 'var(--green)', display: 'inline-block', marginInlineEnd: 5 }} />}{u.name} {u.admin && <span className="adm-pill acc" style={{ marginInlineStart: 4 }}>{u.owner ? t('owner') : t('admin')}</span>}{u.trainer && <span className="adm-pill" style={{ marginInlineStart: 4 }}>{t('trainer')}</span>}{u.disabled && <span className="adm-pill bad" style={{ marginInlineStart: 4 }}>{t('disabled')}</span>}</div>
+          <div className="grow"><div className="tt">{u.live && <Icon name="dot" style={{ fontSize: 9, color: 'var(--green)', display: 'inline-block', marginInlineEnd: 5 }} />}{u.name} {u.admin && <span className="adm-pill acc" style={{ marginInlineStart: 4 }}>{u.owner ? t('owner') : t('admin')}</span>}{u.trainer && <span className="adm-pill" style={{ marginInlineStart: 4 }}>{t('trainer')}</span>}{u.desk && <span className="adm-pill" style={{ marginInlineStart: 4 }}>{t('front desk')}</span>}{u.disabled && <span className="adm-pill bad" style={{ marginInlineStart: 4 }}>{t('disabled')}</span>}</div>
             <div className="ss">{u.live
               ? t('training now · {0}', u.live.name)
               : [tn('{0} workout', '{0} workouts', u.workouts), u.lastWorkout ? t('last {0}', fmtDate(u.lastWorkout)) : null, t('last sync {0}', rel(u.lastSync))].filter(Boolean).join(' · ')}</div>

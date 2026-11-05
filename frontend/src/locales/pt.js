@@ -4119,4 +4119,10 @@ export default {
   "Sound on": "Som ligado",
   "This card is not from this gym, or it has a new QR.": "Este cartão não é deste ginásio, ou tem um QR novo.",
   "Use the camera": "Usar a câmara",
+  "Code for the front desk": "Código para receção",
+  "Entries, members and trainers": "Entradas, sócios e PTs",
+  "Invites, cards and accounts": "Convites, cartões e contas",
+  "Only the gym’s owner or front desk sees this page.": "Só o dono do ginásio ou a receção veem esta página.",
+  "Read the members’ cards at the door": "Ler os cartões dos sócios à entrada",
+  "front desk": "receção",
 }

@@ -19,6 +19,7 @@ import { RecapHomeCard } from '../components/Recap.jsx'
 import PlanOfferCard from '../components/PlanOfferCard.jsx'
 import TrainerPlansCard from '../components/TrainerPlansCard.jsx'
 import MemberCardTile from '../components/MemberCardTile.jsx'
+import GymOwnerCard from '../components/GymOwnerCard.jsx'
 import { scheduleModeOf } from '../lib/rotation.js'
 import { useConnectionTrouble } from '../components/SyncBanner.jsx'
 import { Button } from '../components/ui.jsx'
@@ -196,6 +197,7 @@ export default function Home() {
 
     {/* A plan the student's trainer sent (api/trainer.js), waiting to be opened. */}
     <PlanOfferCard />
+    <GymOwnerCard />
     <MemberCardTile />
     <TrainerPlansCard />
 

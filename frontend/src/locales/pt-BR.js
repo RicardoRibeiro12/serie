@@ -4,6 +4,12 @@
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "Code for the front desk": "Código para recepção",
+  "Entries, members and trainers": "Entradas, sócios e PTs",
+  "Invites, cards and accounts": "Convites, cartões e contas",
+  "Only the gym’s owner or front desk sees this page.": "Só o dono da academia ou a recepção veem esta página.",
+  "Read the members’ cards at the door": "Ler os cartões dos sócios na entrada",
+  "front desk": "recepção",
   "Card not recognised": "Cartão não reconhecido",
   "Card suspended": "Cartão suspenso",
   "Could not read the card": "Não foi possível ler o cartão",

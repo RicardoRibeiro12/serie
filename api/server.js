@@ -3211,6 +3211,13 @@ const routes = {
     json(res, 200, { ok: true, dir: r.dir, name: u ? u.name : null, number: card.number, at: r.dir === 'in' ? r.visit.in : r.visit.out });
   },
 
+  // The front desk screen (frontend views/Rececao.jsx): the gym's name and how many are inside.
+  'GET /api/desk/status': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    if (closeStale(db)) saveDb();
+    json(res, 200, { gym: GYM_NAME, present: (db.visits || []).filter(v => !v.out).length });
+  },
+
   // Entries and exits: who is in now, the last days' visits and the entries per day.
   'GET /api/admin/visits': async (req, res) => {
     if (!requireAdmin(req, res)) return;

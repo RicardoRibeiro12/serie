@@ -172,7 +172,7 @@ export default function Painel() {
             </tr></thead>
             <tbody>{rowsOf(view.rows, { q, filter, sort }).map(m => <tr key={m.id}>
               <td>{m.name}{m.inside && <span className="pn-pill on">{t('in the gym')}</span>}</td>
-              <td>{m.owner ? t('Owner') : m.trainer ? t('Trainer') : t('Member')}</td>
+              <td>{m.owner ? t('Owner') : m.trainer ? t('Trainer') : m.desk ? t('Front desk') : t('Member')}</td>
               <td className="pn-dim">{m.ptName || '–'}</td>
               <td>{m.card ? <><span className="num">{m.card.number}</span> <span className={'pn-pill ' + (m.card.status === 'active' ? 'ok' : 'bad')}>{m.card.status === 'active' ? t('Active') : t('Suspended')}</span></> : <span className="pn-dim">{t('No card')}</span>}</td>
               <td className="num">{m.visits}</td>
@@ -231,7 +231,7 @@ export function summarise({ report, members, users }, days, now = Date.now()) {
   const userById = Object.fromEntries(users.map(u => [u.id, u]))
   const rows = members.map(m => {
     const u = userById[m.id] || {}
-    return { id: m.id, name: m.name, card: m.card, inside: !!m.inside, owner: !!u.owner, trainer: !!u.trainer, trainerId: u.trainerId || null,
+    return { id: m.id, name: m.name, card: m.card, inside: !!m.inside, owner: !!u.owner, trainer: !!u.trainer, desk: !!u.desk, trainerId: u.trainerId || null,
       ptName: u.trainerId && userById[u.trainerId] ? userById[u.trainerId].name : '', visits: countOf[m.id] || 0, last: lastOf[m.id] || 0, workouts: u.workouts ?? null }
   })
   const withCard = rows.filter(r => r.card && r.card.status === 'active')
