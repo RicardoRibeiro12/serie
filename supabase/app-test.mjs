@@ -63,6 +63,13 @@ ok((await err('other', "select public.save_student_plan($1, null, 'x', $2::jsonb
 await as('pt', "select public.save_student_plan($1, $2, 'Hipertrofia 2', $3::jsonb)", [ids.aluno, planId, JSON.stringify({ routines: [{ id: 'r', name: 'A', ex: [] }] })])
 ok((await as('aluno', 'select count(*)::int c from student_plans'))[0].c === 1, 'same id updates, no duplicate')
 
+// consent (RGPD): no assessment without the student's health consent
+const noConsent = await err('pt', "select public.record_assessment($1, current_date, 80, '{}'::jsonb, '{}'::jsonb, null)", [ids.aluno])
+ok(noConsent && /no health consent/.test(noConsent), 'no assessment without health consent')
+let meC = (await as('aluno', "select public.set_consent(true, true, '2026-11') m"))[0].m
+ok(meC.consentTerms && meC.consentHealth && meC.consentVersion === '2026-11', 'consent recorded with its version')
+ok((await as('pt', 'select public.trainer_students() s'))[0].s[0].healthConsent === true, 'trainer sees that the student consented')
+
 // assessments
 const aId = (await as('pt', "select public.record_assessment($1, current_date, 108.4, '{\"bodyFat\":33.1}'::jsonb, '{\"age\":38,\"height\":176,\"sex\":\"m\"}'::jsonb, 'teste') id", [ids.aluno]))[0].id
 const mine = await as('aluno', 'select id, body, merged from assessments')
@@ -70,6 +77,12 @@ ok(mine.length === 1 && mine[0].body.age === 38 && !mine[0].merged, 'student rea
 ok((await as('pt', 'select count(*)::int c from assessments'))[0].c === 1, 'trainer reads it at once')
 ok((await as('aluno', 'select public.assessments_merged(array[$1]::uuid[]) n', [aId]))[0].n === 1, 'student marks it merged')
 ok((await as('other', 'select count(*)::int c from assessments'))[0].c === 0, 'stranger reads no assessments')
+meC = (await as('aluno', 'select public.set_consent(null, false, null) m'))[0].m
+ok(meC.consentTerms && !meC.consentHealth, 'health consent withdrawn, privacy acceptance kept')
+ok((await err('pt', "select public.record_assessment($1, current_date, 80, '{}'::jsonb, '{}'::jsonb, null)", [ids.aluno])) !== null, 'no new assessment after withdrawal')
+ok((await as('aluno', 'select public.delete_my_assessments() n'))[0].n === 1, 'student erases their assessments')
+ok((await as('pt', 'select count(*)::int c from assessments'))[0].c === 0, 'trainer no longer sees them')
+await as('aluno', "select public.set_consent(null, true, '2026-11')")
 
 // cards and visits
 ok((await err('pt', 'select public.issue_card($1, $2)', [gym, ids.aluno])) !== null, 'a trainer cannot issue cards')
@@ -96,6 +109,14 @@ ok(people.length === 3 && people.some(p => p.card && p.card.number === card.numb
 await as('owner', "select public.set_card_status($1, $2, 'suspended')", [gym, ids.aluno])
 ok((await err('owner', 'select public.desk_scan($1, $2)', [gym, card.number])) !== null, 'suspended card refused')
 ok((await err('aluno', 'select public.gym_people($1)', [gym])) !== null, 'student cannot list the gym')
+
+// right to erasure: the person deletes their account; an owner cannot while they own a gym
+ok((await err('aluno', "select public.delete_my_account('someone else')")) !== null, 'delete needs the name typed back')
+ok((await err('owner', "select public.delete_my_account('Dono')")) !== null, 'an owner hands the gym on first')
+ok((await as('aluno', "select public.delete_my_account('aluno rui') d"))[0].d === true, 'student deletes their account (name in any case)')
+ok((await db.query('select count(*)::int c from profiles where id = $1', [ids.aluno])).rows[0].c === 0, 'profile gone')
+ok((await db.query('select count(*)::int c from member_cards where user_id = $1', [ids.aluno])).rows[0].c === 0, 'card gone')
+ok((await db.query('select count(*)::int c from student_plans where to_id = $1', [ids.aluno])).rows[0].c === 0, 'plans gone')
 
 console.log(`${n} checks, ${fails} failed`)
 process.exit(fails ? 1 : 0)

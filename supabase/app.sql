@@ -24,6 +24,13 @@ create index if not exists student_plans_to_idx on public.student_plans (to_id, 
 -- student's app has folded weight and body fat into their own history yet.
 alter table public.assessments add column if not exists body jsonb not null default '{}'::jsonb;
 alter table public.assessments add column if not exists merged boolean not null default false;
+
+-- RGPD consent, per person: the privacy policy (needed to use the app), and separately the
+-- explicit consent for health data (art. 9): without it no trainer can record an assessment for
+-- them (record_assessment). The version names the policy text that was accepted.
+alter table public.profiles add column if not exists consent_terms_at timestamptz;
+alter table public.profiles add column if not exists consent_health_at timestamptz;
+alter table public.profiles add column if not exists consent_version text;
 alter table public.assessments drop constraint if exists assessments_check;
 alter table public.assessments add constraint assessments_check
   check (weight is not null or "values" <> '{}'::jsonb or body <> '{}'::jsonb);
@@ -68,6 +75,7 @@ language sql stable security definer set search_path = public as $$
     'admin', public.is_platform_admin() or exists (select 1 from gyms where owner_id = p.id),
     'owner', public.is_platform_admin(),
     'trainer', exists (select 1 from memberships where user_id = p.id and role = 'trainer'),
+    'consentTerms', p.consent_terms_at, 'consentHealth', p.consent_health_at, 'consentVersion', p.consent_version,
     'gyms', coalesce((select jsonb_agg(jsonb_build_object('id', g.id, 'name', g.name, 'role', 'owner') order by g.created_at)
                         from gyms g where g.owner_id = p.id), '[]'::jsonb)
             || coalesce((select jsonb_agg(jsonb_build_object('id', g.id, 'name', g.name, 'role', m.role) order by m.created_at)
@@ -161,7 +169,8 @@ language sql stable security definer set search_path = public as $$
       'bodyFat', (select jsonb_build_object('d', a.day, 'v', (a."values"->>'bodyFat')::numeric) from assessments a
                    where a.student_id = p.id and a."values" ? 'bodyFat' order by a.day desc, a.created_at desc limit 1),
       'plans', (select count(*) from student_plans sp where sp.to_id = p.id),
-      'assessments', (select count(*) from assessments a where a.student_id = p.id)) as row
+      'assessments', (select count(*) from assessments a where a.student_id = p.id),
+      'healthConsent', p.consent_health_at is not null) as row
     from memberships m join gyms g on g.id = m.gym_id join profiles p on p.id = m.user_id
     left join user_state s on s.user_id = p.id
     where m.role = 'student' and (m.trainer_id = auth.uid() or g.owner_id = auth.uid())
@@ -198,11 +207,55 @@ declare v_gym uuid := public.coach_gym(p_student); v_id uuid;
 begin
   perform public.require_uid();
   if v_gym is null then raise exception 'not your student' using errcode = '42501'; end if;
+  if (select consent_health_at from profiles where id = p_student) is null then
+    raise exception 'no health consent' using errcode = '42501';
+  end if;
   insert into assessments (gym_id, author_id, student_id, day, weight, "values", body, note)
   values (v_gym, auth.uid(), p_student, p_day, p_weight, coalesce(p_values, '{}'::jsonb), coalesce(p_body, '{}'::jsonb), nullif(btrim(coalesce(p_note, '')), ''))
   returning id into v_id;
   return v_id;
 end $$;
+
+-- The person's own consent. p_terms true records the acceptance of the privacy policy (it is not
+-- withdrawn here: that is deleting the account). p_health true gives, false withdraws, the consent
+-- for health data; null leaves either as it is. Answers the person as app_me() does.
+create or replace function public.set_consent(p_terms boolean, p_health boolean, p_version text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  perform public.require_uid();
+  update profiles set
+    consent_terms_at = case when p_terms is true and consent_terms_at is null then now() else consent_terms_at end,
+    consent_health_at = case when p_health is true then coalesce(consent_health_at, now()) when p_health is false then null else consent_health_at end,
+    consent_version = case when p_terms is true or p_health is not null then left(coalesce(nullif(btrim(p_version), ''), consent_version), 20) else consent_version end
+  where id = auth.uid();
+  return public.app_me();
+end $$;
+
+-- The person deletes their own account (right to erasure): the sign-in, the profile and, by the
+-- foreign keys, their state, workouts, memberships, plans, assessments, card and visits. p_name must
+-- be their name, typed back, so a stray request does nothing. An owner hands their gyms on first.
+create or replace function public.delete_my_account(p_name text) returns boolean
+language plpgsql security definer set search_path = public, auth as $$
+declare v_name text;
+begin
+  perform public.require_uid();
+  select name into v_name from profiles where id = auth.uid();
+  if v_name is null or lower(btrim(coalesce(p_name, ''))) <> lower(btrim(v_name)) then
+    raise exception 'name does not match' using errcode = '22023';
+  end if;
+  if exists (select 1 from gyms where owner_id = auth.uid()) then
+    raise exception 'owns a gym' using errcode = '42501';
+  end if;
+  delete from platform_admins where user_id = auth.uid();
+  delete from auth.users where id = auth.uid();
+  return true;
+end $$;
+
+-- The person erases every assessment recorded about them (right to erasure).
+create or replace function public.delete_my_assessments() returns integer
+language sql security definer set search_path = public as $$
+  with d as (delete from assessments where student_id = auth.uid() returning 1) select count(*)::int from d
+$$;
 
 -- The student's app merged these into their own weigh-ins and measurements.
 create or replace function public.assessments_merged(p_ids uuid[]) returns integer
@@ -362,6 +415,7 @@ grant select on public.assessments to authenticated;
 revoke execute on all functions in schema public from public, anon;
 grant execute on function
   public.app_me(), public.app_join(text, text, text), public.put_state(jsonb, bigint, text),
+  public.set_consent(boolean, boolean, text), public.delete_my_assessments(), public.delete_my_account(text),
   public.coach_gym(uuid), public.trainer_students(), public.save_student_plan(uuid, uuid, text, jsonb),
   public.record_assessment(uuid, date, numeric, jsonb, jsonb, text), public.assessments_merged(uuid[]),
   public.issue_card(uuid, uuid), public.set_card_status(uuid, uuid, text), public.my_card(),
