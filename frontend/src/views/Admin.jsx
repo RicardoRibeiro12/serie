@@ -221,7 +221,10 @@ function UserDetail({ id, viewerOwner, onChanged, close }) {
 
 function InvitesCard({ invites, reload, inviteOnly }) {
   const toast = useUI(s => s.toast)
-  const gen = () => api('/api/admin/invites/new', { method: 'POST', body: '{}' })
+  const config = useStore(s => s.config)
+  // role 'trainer': the code makes its new profile a PT of the gym (Série on Supabase; the local
+  // server's codes have no role, there an admin makes someone a trainer from their profile).
+  const gen = role => api('/api/admin/invites/new', { method: 'POST', body: JSON.stringify(role ? { role } : {}) })
     .then(({ invite }) => { navigator.clipboard?.writeText(invite.code).catch(() => {}); toast(t('Code {0} created & copied', invite.code)); reload() })
     .catch(e => toast(e.message))
   const revoke = code => confirmSheet({
@@ -235,7 +238,7 @@ function InvitesCard({ invites, reload, inviteOnly }) {
   const used = (invites || []).filter(i => i.usedBy)
   return <div className="card">
     <div className="row between"><h2 style={{ margin: 0 }}>{t('Invite codes')}</h2>
-      <Button variant="primary" size="sm" onClick={gen} icon="plus">{t('New code')}</Button></div>
+      <div className="row" style={{ gap: 6 }}>{config?.backend === 'supabase' && <Button size="sm" onClick={() => gen('trainer')}>{t('Code for a PT')}</Button>}<Button variant="primary" size="sm" onClick={() => gen()} icon="plus">{t('New code')}</Button></div></div>
     <div className="adm-lead">
       {inviteOnly
         ? t('Sign-up is invite-only: someone needs one of these codes to create a profile. Each code works once.')

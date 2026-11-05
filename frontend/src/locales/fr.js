@@ -4064,4 +4064,5 @@ export default {
   "last {0} days": "{0} derniers jours",
   "{0} entry": "{0} entrée",
   "{0} entries": "{0} entrées",
+  "Code for a PT": "Code pour un coach",
 }

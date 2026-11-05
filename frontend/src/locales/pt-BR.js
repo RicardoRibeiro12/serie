@@ -4,6 +4,7 @@
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "Code for a PT": "Código para PT",
   "{0} day": "{0} dia",
   "{0} days": "{0} dias",
   "last {0} day": "último {0} dia",

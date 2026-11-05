@@ -4062,4 +4062,5 @@ export default {
   "last {0} days": { one: "останній {0} день", few: "останні {0} дні", many: "останні {0} днів" },
   "{0} entry": "{0} вхід",
   "{0} entries": { one: "{0} вхід", few: "{0} входи", many: "{0} входів" },
+  "Code for a PT": "Code for a PT",
 }

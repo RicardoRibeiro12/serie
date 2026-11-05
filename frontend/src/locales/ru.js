@@ -4069,4 +4069,5 @@ export default {
   "last {0} days": { one: "последний {0} день", few: "последние {0} дня", many: "последние {0} дней" },
   "{0} entry": "{0} вход",
   "{0} entries": { one: "{0} вход", few: "{0} входа", many: "{0} входов" },
+  "Code for a PT": "Code for a PT",
 }

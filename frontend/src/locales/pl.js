@@ -4065,4 +4065,5 @@ export default {
   "last {0} days": { one: "ostatni {0} dzień", few: "ostatnie {0} dni", many: "ostatnie {0} dni" },
   "{0} entry": "{0} wejście",
   "{0} entries": { one: "{0} wejście", few: "{0} wejścia", many: "{0} wejść" },
+  "Code for a PT": "Code for a PT",
 }

@@ -4064,4 +4064,5 @@ export default {
   "last {0} days": "últimos {0} dias",
   "{0} entry": "{0} entrada",
   "{0} entries": "{0} entradas",
+  "Code for a PT": "Código para PT",
 }
