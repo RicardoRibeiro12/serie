@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const path = join(here, '..', '..', 'src', 'locales', 'pt-BR.js')
-const keys = new Set(Object.keys(JSON.parse(readFileSync(join(here, 'admin-strings.json'), 'utf8'))))
+const files = process.argv.slice(2).length ? process.argv.slice(2) : [join(here, 'admin-strings.json')]
+const keys = new Set(files.flatMap(f => Object.keys(JSON.parse(readFileSync(f, 'utf8')))))
 const SWAPS = [
   [/«/g, '“'], [/»/g, '”'],
   [/\bRegisto\b/g, 'Registro'], [/\bregisto\b/g, 'registro'],
@@ -15,7 +16,7 @@ const SWAPS = [
   [/\bregistado\b/g, 'registrado'], [/\bregistada\b/g, 'registrada'], [/\bregistam\b/g, 'registram'],
   [/\becrã\b/g, 'tela'], [/palavra-passe/g, 'senha'], [/\bpassword\b/g, 'senha'], [/\bpasswords\b/g, 'senhas'],
   [/\butilizadores\b/g, 'usuários'], [/\butilizador\b/g, 'usuário'], [/\bUtilizadores\b/g, 'Usuários'], [/\bUtilizador\b/g, 'Usuário'],
-  [/\bDescarregar\b/g, 'Baixar'], [/\bdescarrega\b/g, 'baixe'], [/\bDescarrega\b/g, 'Baixe'],
+  [/telemóvel/g, 'celular'], [/\bregistou\b/g, 'registrou'], [/palavras-passe/g, 'senhas'], [/\bcódigo de reposição\b/g, 'código de redefinição'], [/\bcódigos de reposição\b/g, 'códigos de redefinição'], [/\bDescarregar\b/g, 'Baixar'], [/\bdescarrega\b/g, 'baixe'], [/\bDescarrega\b/g, 'Baixe'],
 ]
 const raw = readFileSync(path, 'utf8')
 const nl = raw.includes('\r\n') ? '\r\n' : '\n'
