@@ -4066,4 +4066,5 @@ export default {
   "{0} entry": "{0} wejście",
   "{0} entries": { one: "{0} wejście", few: "{0} wejścia", many: "{0} wejść" },
   "Code for a PT": "Code for a PT",
+  "That is an invite code, not a reset code. To make your account, go back, tap “Create new profile” and enter it in the gym or trainer code.": "That is an invite code, not a reset code. To make your account, go back, tap “Create new profile” and enter it in the gym or trainer code.",
 }

@@ -4070,4 +4070,5 @@ export default {
   "{0} entry": "{0} вход",
   "{0} entries": { one: "{0} вход", few: "{0} входа", many: "{0} входов" },
   "Code for a PT": "Code for a PT",
+  "That is an invite code, not a reset code. To make your account, go back, tap “Create new profile” and enter it in the gym or trainer code.": "That is an invite code, not a reset code. To make your account, go back, tap “Create new profile” and enter it in the gym or trainer code.",
 }

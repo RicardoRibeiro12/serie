@@ -1,5 +1,6 @@
 {
   "Gym or trainer code (optional)": ["Código do ginásio ou do PT (opcional)", "Code de la salle ou du coach (facultatif)"],
   "If your gym or your trainer gave you a code, it puts you in their gym.": ["Se o ginásio ou o teu PT te deu um código, ele junta-te ao ginásio.", "Si votre salle ou votre coach vous a donné un code, il vous inscrit dans leur salle."],
-  "Code for a PT": ["Código para PT", "Code pour un coach"]
+  "Code for a PT": ["Código para PT", "Code pour un coach"],
+  "That is an invite code, not a reset code. To make your account, go back, tap “Create new profile” and enter it in the gym or trainer code.": ["Isso é um código de convite, não de reposição. Para criares a conta, volta atrás, toca em «Criar novo perfil» e escreve-o no código do ginásio ou do PT.", "C’est un code d’invitation, pas de réinitialisation. Pour créer votre compte, revenez en arrière, touchez « Créer un profil » et saisissez-le dans le code de la salle ou du coach."]
 }

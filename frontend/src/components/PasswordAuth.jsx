@@ -61,6 +61,7 @@ export function passwordError(e) {
     case 'passkey': case 'passkey-required': return t('Your passkey could not be confirmed.')
     case 'last-way-in': return t('This password is the only way into your profile, so it cannot be removed.')
     case 'reset-invalid': return t('That reset code is wrong or has expired. Ask your admin for a new one.')
+    case 'is-invite': return t('That is an invite code, not a reset code. To make your account, go back, tap “Create new profile” and enter it in the gym or trainer code.')
     case 'disabled': return t('This account has been disabled.')
     case 'busy': return t('The server is busy. Try again in a moment.')
   }

@@ -4,6 +4,7 @@
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "That is an invite code, not a reset code. To make your account, go back, tap “Create new profile” and enter it in the gym or trainer code.": "Isso é um código de convite, não de redefinição. Para criar sua conta, volte, toque em “Criar novo perfil” e digite-o no código da academia ou do personal.",
   "Code for a PT": "Código para PT",
   "{0} day": "{0} dia",
   "{0} days": "{0} dias",

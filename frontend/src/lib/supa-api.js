@@ -33,8 +33,19 @@ async function authCall(path, body, token) {
     body: JSON.stringify(body || {})
   })
   const j = await r.json().catch(() => ({}))
-  if (!r.ok) throw fail(authMessage(j), r.status === 400 ? 401 : r.status, j)
+  if (!r.ok) throw fail(authMessage(j), r.status === 400 ? 401 : r.status, { ...j, code: authCode(j) })
   return j
+}
+// The codes the sign-in screens translate (components/PasswordAuth.jsx passwordError).
+const authCode = j => {
+  const c = j.error_code || j.code || ''
+  const msg = String(j.msg || j.error_description || j.message || '')
+  if (c === 'invalid_credentials' || /invalid login/i.test(msg)) return 'bad-credentials'
+  if (c === 'user_already_exists' || /already registered/i.test(msg)) return 'name-taken'
+  if (c === 'weak_password') return 'too-short'
+  if (c === 'email_address_invalid') return 'email-invalid'
+  if (c === 'over_request_rate_limit' || c === 'over_email_send_rate_limit') return 'busy'
+  return c || undefined
 }
 const authMessage = j => {
   const code = j.error_code || j.code || ''
@@ -259,7 +270,12 @@ const ROUTES = {
     })
     const j = await r.json().catch(() => null)
     if (!r.ok) throw /too-short/.test((j && j.message) || '') ? fail('too-short', 400, { error: 'too-short', code: 'too-short' }) : dbError(r.status, j)
-    if (j !== true) throw fail('wrong or expired reset code', 404, { error: 'wrong or expired reset code', code: 'reset-invalid' })
+    if (j !== true) {
+      // An invite code typed here by mistake (a PT's or the gym's): say where it goes instead.
+      const inv = await fetch(URL_ + '/rest/v1/rpc/check_invite', { method: 'POST', headers: { apikey: KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_code: b.code }) }).then(x => x.json()).catch(() => null)
+      if (inv) throw fail('that is an invite code', 400, { error: 'that is an invite code', code: 'is-invite' })
+      throw fail('wrong or expired reset code', 404, { error: 'wrong or expired reset code', code: 'reset-invalid' })
+    }
     return { user: await signIn(who, b.next) }
   },
   'POST /api/admin/user/delete': async b => { const g = await ownGym(); await rpc('remove_member', { p_gym: g.id, p_user: b.id }); return ok },

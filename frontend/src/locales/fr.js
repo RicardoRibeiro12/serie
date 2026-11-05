@@ -4065,4 +4065,5 @@ export default {
   "{0} entry": "{0} entrée",
   "{0} entries": "{0} entrées",
   "Code for a PT": "Code pour un coach",
+  "That is an invite code, not a reset code. To make your account, go back, tap “Create new profile” and enter it in the gym or trainer code.": "C’est un code d’invitation, pas de réinitialisation. Pour créer votre compte, revenez en arrière, touchez « Créer un profil » et saisissez-le dans le code de la salle ou du coach.",
 }
