@@ -4066,4 +4066,9 @@ export default {
   "{0} entries": "{0} entradas",
   "Code for a PT": "Código para PT",
   "That is an invite code, not a reset code. To make your account, go back, tap “Create new profile” and enter it in the gym or trainer code.": "Isso é um código de convite, não de reposição. Para criares a conta, volta atrás, toca em «Criar novo perfil» e escreve-o no código do ginásio ou do PT.",
+  "PT": "PT",
+  "No PT": "Sem PT",
+  "{0} now trains with {1}": "{0} passa a treinar com {1}",
+  "{0} has no PT now": "{0} fica sem PT",
+  "No trainers in this gym yet. Make someone a trainer, or invite one with “Code for a PT”.": "Ainda não há PTs neste ginásio. Torna alguém PT, ou convida um com «Código para PT».",
 }

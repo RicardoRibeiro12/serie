@@ -61,7 +61,34 @@ function RecoveryCodeSheet({ name, code, expires, close }) {
   </>
 }
 
-function UserDetail({ id, viewerOwner, onChanged, close }) {
+// The PT a student trains with, picked from the gym's trainers (POST /api/admin/user/trainer).
+function StudentTrainer({ id, name, people, onChanged }) {
+  const toast = useUI(s => s.toast)
+  const trainers = people.filter(p => p.trainer && p.id !== id)
+  const [value, setValue] = useState((people.find(p => p.id === id) || {}).trainerId || '')
+  const [busy, setBusy] = useState(false)
+  const change = async next => {
+    setBusy(true)
+    try {
+      await api('/api/admin/user/trainer', { method: 'POST', body: JSON.stringify({ id, trainerId: next || null }) })
+      setValue(next)
+      const pt = trainers.find(p => p.id === next)
+      toast(pt ? t('{0} now trains with {1}', name, pt.name) : t('{0} has no PT now', name))
+      onChanged()
+    } catch (e) { toast(e.message) } finally { setBusy(false) }
+  }
+  return <div style={{ margin: '14px 0 4px' }}>
+    <label className="small dim" htmlFor={'adm-pt-' + id}>{t('PT')}</label>
+    {trainers.length
+      ? <select id={'adm-pt-' + id} className="input" style={{ marginTop: 6 }} value={value} disabled={busy} onChange={e => change(e.target.value)}>
+        <option value="">{t('No PT')}</option>
+        {trainers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+      </select>
+      : <div className="adm-hint">{t('No trainers in this gym yet. Make someone a trainer, or invite one with “Code for a PT”.')}</div>}
+  </div>
+}
+
+function UserDetail({ id, viewerOwner, onChanged, close, people = [] }) {
   const me = useStore(s => s.user)
   const [d, setD] = useState(null)
   const toast = useUI(s => s.toast)
@@ -160,6 +187,8 @@ function UserDetail({ id, viewerOwner, onChanged, close }) {
         {u.trainer ? t('Remove trainer') : t('Make trainer')}</button>
       <div className="adm-hint">{u.trainer ? t('They see the students who joined with their invite codes and send them plans.') : t('A trainer invites students and sends them plans.')}</div>
     </>}
+    {/* A student's PT: the owner gives them one, swaps it (a PT leaves) or takes it away. */}
+    {!u.disabled && !u.trainer && !u.owner && <StudentTrainer id={u.id} name={u.name} people={people} onChanged={onChanged} />}
     {viewerOwner && !u.owner && !u.disabled && <>
       <button className="btn" style={{ margin: '12px 0 4px' }}
         onClick={() => u.admin
@@ -364,7 +393,7 @@ export default function Admin() {
 
   // From the list rather than the stored session, which may predate a handover.
   const viewerOwner = !!(users || []).find(u => u.id === user.id)?.owner
-  const openUser = id => openSheet(close => <UserDetail id={id} viewerOwner={viewerOwner} onChanged={loadUsers} close={close} />)
+  const openUser = id => openSheet(close => <UserDetail id={id} viewerOwner={viewerOwner} onChanged={loadUsers} close={close} people={users || []} />)
   const liveUsers = (users || []).filter(u => u.live)
   const activeCount = (users || []).filter(u => u.lastSync && Date.now() - u.lastSync < 7 * 86400000).length
   const disabledCount = (users || []).filter(u => u.disabled).length

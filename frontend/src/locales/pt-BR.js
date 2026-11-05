@@ -4,6 +4,11 @@
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "PT": "PT",
+  "No PT": "Sem personal",
+  "{0} now trains with {1}": "{0} agora treina com {1}",
+  "{0} has no PT now": "{0} ficou sem personal",
+  "No trainers in this gym yet. Make someone a trainer, or invite one with “Code for a PT”.": "Ainda não há personais nesta academia. Torne alguém personal, ou convide um com “Código para PT”.",
   "That is an invite code, not a reset code. To make your account, go back, tap “Create new profile” and enter it in the gym or trainer code.": "Isso é um código de convite, não de redefinição. Para criar sua conta, volte, toque em “Criar novo perfil” e digite-o no código da academia ou do personal.",
   "Code for a PT": "Código para PT",
   "{0} day": "{0} dia",
