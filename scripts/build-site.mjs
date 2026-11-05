@@ -47,9 +47,9 @@ const NAV = [['home', 'Início', '/'], ['sobre', 'Sobre', '/sobre/'], ['pt', 'Pe
 // Header words per page language. The inner pages exist only in Portuguese, so their links keep
 // their Portuguese names everywhere.
 const UI = {
-  'pt-PT': { skip: 'Saltar para o conteúdo', home: 'página inicial', main: 'Principal', app: 'Entrar', lang: 'Idioma', homePath: '/' },
-  en: { skip: 'Skip to content', home: 'home', main: 'Main', app: 'Open app', lang: 'Language', homePath: '/en/' },
-  fr: { skip: 'Aller au contenu', home: 'accueil', main: 'Principal', app: 'Ouvrir l’app', lang: 'Langue', homePath: '/fr/' }
+  'pt-PT': { skip: 'Saltar para o conteúdo', home: 'página inicial', main: 'Principal', app: 'Entrar', lang: 'Idioma', theme: 'Modo claro', homePath: '/' },
+  en: { skip: 'Skip to content', home: 'home', main: 'Main', app: 'Open app', lang: 'Language', theme: 'Light mode', homePath: '/en/' },
+  fr: { skip: 'Aller au contenu', home: 'accueil', main: 'Principal', app: 'Ouvrir l’app', lang: 'Langue', theme: 'Mode clair', homePath: '/fr/' }
 }
 
 const header = page => {
@@ -63,6 +63,7 @@ const header = page => {
   </nav>
   <a class="btn primary cta" href="/app/">${u.app}</a>
   ${langSwitch(page, 'lang', false)}
+  <button type="button" class="theme-toggle" aria-pressed="false" aria-label="${u.theme}" title="${u.theme}"><svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg><svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
   <details class="menu">
     <summary aria-label="Menu"><svg class="i-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"/></svg><svg class="i-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="square" fill="none"/></svg></summary>
     <div class="menu-panel">
@@ -163,6 +164,7 @@ ${alt}
 <meta name="twitter:description" content="${esc(page.description)}">
 <meta name="twitter:image" content="${abs('/assets/og.png')}">
 <link rel="preload" href="/assets/fonts/archivo-wdth.woff2" as="font" type="font/woff2" crossorigin>
+<script src="/assets/theme.js"></script>
 <link rel="stylesheet" href="/assets/site.css">
 ${jsonLd(page)}
 </head>
@@ -244,7 +246,7 @@ const appCsp = [
   "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'", 'upgrade-insecure-requests'
 ].join('; ')
 const siteCsp = [
-  "default-src 'self'", "script-src 'none'", "style-src 'self'", "img-src 'self' data:", "font-src 'self'",
+  "default-src 'self'", "script-src 'self'", "style-src 'self'", "img-src 'self' data:", "font-src 'self'",
   "connect-src 'none'", "object-src 'none'", "base-uri 'self'", "form-action 'none'", "frame-ancestors 'none'", 'upgrade-insecure-requests'
 ].join('; ')
 

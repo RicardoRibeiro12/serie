@@ -20,6 +20,15 @@
 @media (prefers-color-scheme:light){
   :root:not([data-theme="dark"]){color-scheme:light;--bg:#f2f0ea;--surface:#ffffff;--raised:#e7e3d9;--raised-2:#d9d4c7;--line:#d9d5ca;--line-strong:#bdb8ab;--text:#0f0f0e;--muted:#4a4843;--dim:#66645d;--acc:#b8430f;--on-acc:#ffffff;--sel:rgba(184,67,15,.22)}
 }
+:root[data-theme="light"]{color-scheme:light;--bg:#f2f0ea;--surface:#ffffff;--raised:#e7e3d9;--raised-2:#d9d4c7;--line:#d9d5ca;--line-strong:#bdb8ab;--text:#0f0f0e;--muted:#4a4843;--dim:#66645d;--acc:#b8430f;--on-acc:#ffffff;--sel:rgba(184,67,15,.22)}
+/* Light/dark switch in the header (assets/theme.js). The sun shows in dark, the moon in light. */
+.theme-toggle{flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid var(--line);background:transparent;color:var(--text);cursor:pointer}
+.theme-toggle:hover{border-color:var(--line-strong)}
+.theme-toggle:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.theme-toggle svg{width:20px;height:20px}
+.theme-toggle .i-moon{display:none}
+.theme-toggle[aria-pressed="true"] .i-sun{display:none}
+.theme-toggle[aria-pressed="true"] .i-moon{display:block}
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scrollbar-color:var(--line-strong) var(--bg);accent-color:var(--acc);caret-color:var(--acc)}
 body{margin:0;background:var(--bg);color:var(--text);font:400 17px/1.55 var(--display);font-stretch:100%}
@@ -260,3 +269,5 @@ p{max-width:68ch;text-wrap:pretty}
 .mt-24{margin-top:24px}
 .mt-32{margin-top:32px}
 @media (max-width:639px){.ui{max-width:none}}
+.theme-toggle{margin-left:8px}
+@media (max-width:960px){.theme-toggle{margin-left:0;margin-right:8px}}
