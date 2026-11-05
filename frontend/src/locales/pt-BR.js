@@ -4,6 +4,8 @@
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "Gym or trainer code (optional)": "Código da academia ou do personal (opcional)",
+  "If your gym or your trainer gave you a code, it puts you in their gym.": "Se a academia ou o seu personal te deu um código, ele coloca você na academia.",
   "show it at the front desk": "mostre na recepção",
   "Show the QR larger": "Mostrar o QR maior",
   "QR for the front desk": "QR para a recepção",

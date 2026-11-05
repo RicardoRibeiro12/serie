@@ -4022,4 +4022,6 @@ export default {
   "Show the QR larger": "Afficher le QR en grand",
   "QR for the front desk": "QR pour l’accueil",
   "Show the QR at the front desk when you arrive and when you leave. If you forget on the way out, you are checked out at the end of the day.": "Montrez le QR à l’accueil en arrivant et en partant. Si vous oubliez en sortant, la sortie est enregistrée en fin de journée.",
+  "Gym or trainer code (optional)": "Code de la salle ou du coach (facultatif)",
+  "If your gym or your trainer gave you a code, it puts you in their gym.": "Si votre salle ou votre coach vous a donné un code, il vous inscrit dans leur salle.",
 }

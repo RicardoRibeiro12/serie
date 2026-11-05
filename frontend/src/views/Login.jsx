@@ -23,7 +23,7 @@ function RegisterSheet({ close }) {
   // A password is offered only where the instance allows it (#118), and is the only choice in a
   // browser that cannot make a passkey. Where both work, the passkey stays the first one.
   const pwOn = passwordOn(config)
-  const [how, setHow] = useState(webauthnOK() ? 'passkey' : 'password')
+  const [how, setHow] = useState(passkeysOn(config) ? 'passkey' : 'password')
   const ref = useRef(null)
   useEffect(() => { setTimeout(() => ref.current?.focus(), 250) }, [])
   // Boot already fetched this; retry here only if that attempt failed, so the invite field still
@@ -40,7 +40,7 @@ function RegisterSheet({ close }) {
       else { await pullState(); useUI.getState().toast(t('Welcome, {0}', u.name)) }
     } catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') useUI.getState().toast(passkeyError(e, t('Registration failed'))) }
   }
-  const choose = pwOn && webauthnOK() && <>
+  const choose = pwOn && passkeysOn(config) && <>
     <Segmented options={[{ value: 'passkey', label: t('Passkey'), icon: 'fingerprint' }, { value: 'password', label: t('Password'), icon: 'key' }]}
       value={how} onChange={setHow} />
     <div style={{ height: 12 }} />
@@ -49,7 +49,7 @@ function RegisterSheet({ close }) {
     <h3>{t('Create your profile')}</h3>
     {choose}
     <div className="muted small" style={{ marginBottom: 14 }}>{t('Pick a name and a password. You sign in with both.')}</div>
-    <PasswordRegisterForm close={close} inviteOnly={inviteOnly} name={name} setName={setName} code={code} setCode={setCode} />
+    <PasswordRegisterForm close={close} inviteOnly={inviteOnly} codeField={!!config?.invite_field} name={name} setName={setName} code={code} setCode={setCode} />
   </>
   return <>
     <h3>{t('Create your profile')}</h3>
@@ -66,6 +66,10 @@ function RegisterSheet({ close }) {
     <Button variant="primary" onClick={go}>{t('Create passkey')}</Button>
   </>
 }
+
+// Passkeys where the browser makes them and the server takes them: Série on Supabase signs in with
+// a name (or e-mail) and a password only (lib/supa-api.js sends passkeys: false).
+const passkeysOn = config => webauthnOK() && config?.passkeys !== false
 
 export default function Login() {
   const { setUser, adoptProfile, setGuest } = useStore()
@@ -103,7 +107,7 @@ export default function Login() {
     <div className="narrow" style={wrap}>
       {head}
       <div className="muted" style={{ marginBottom: 34 }}>{t('Your workouts. Your weights. Your profile.')}</div>
-      {webauthnOK() ? <>
+      {passkeysOn(config) ? <>
         <Button variant="primary" icon="fingerprint" onClick={signIn}>{t('Sign in with passkey')}</Button>
         <div style={{ height: 10 }} />
         {pwOn && <><Button icon="key" onClick={() => openPasswordSignIn()}>{t('Sign in with password')}</Button><div style={{ height: 10 }} /></>}
@@ -118,11 +122,11 @@ export default function Login() {
       </> : pwOn ? <>
         {/* Plain http on a LAN address, or a browser without passkey support: the password is
             the way in, and the only way to create a profile from here. */}
-        <div className="card small muted" style={{ textAlign: 'start', marginBottom: 14 }}>{t("This browser doesn't support passkeys. Sign in with your name and password instead.")}</div>
+        {config?.passkeys !== false && <div className="card small muted" style={{ textAlign: 'start', marginBottom: 14 }}>{t("This browser doesn't support passkeys. Sign in with your name and password instead.")}</div>}
         <Button variant="primary" icon="key" onClick={() => openPasswordSignIn()}>{t('Sign in with password')}</Button>
         <div style={{ height: 10 }} />
         <Button icon="plusCircle" onClick={register}>{t('Create new profile')}</Button>
-        <Button variant="ghost" className="dim" onClick={openLostAccess}>{t('Lost access?')}</Button>
+        {config?.passkeys !== false && <Button variant="ghost" className="dim" onClick={openLostAccess}>{t('Lost access?')}</Button>}
         {canGuest && <div style={{ height: 10 }} />}
       </> : <div className="card small muted" style={{ textAlign: 'start' }}>{canGuest
         ? t("This browser doesn't do passkeys, but you can still use openGym locally on this device.")

@@ -4101,4 +4101,6 @@ export default {
   "Show the QR larger": "Show the QR larger",
   "QR for the front desk": "QR for the front desk",
   "Show the QR at the front desk when you arrive and when you leave. If you forget on the way out, you are checked out at the end of the day.": "Show the QR at the front desk when you arrive and when you leave. If you forget on the way out, you are checked out at the end of the day.",
+  "Gym or trainer code (optional)": "Gym or trainer code (optional)",
+  "If your gym or your trainer gave you a code, it puts you in their gym.": "If your gym or your trainer gave you a code, it puts you in their gym.",
 }
