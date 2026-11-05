@@ -3261,6 +3261,7 @@ paths:
                 date: { type: string, format: date }
                 weight: { type: number, minimum: 20, maximum: 400 }
                 values: { type: object, additionalProperties: { type: number } }
+                body: { type: object, description: 'age, height, sex (m|f), restingKcal, restingVo2, hrRest, visceral, waterL, waterPct, ecwL, muscleKg, leanKg' }
                 note: { type: string, maxLength: 500 }
       responses:
         '200':
@@ -3276,11 +3277,105 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Not found. }
+  /api/trainer/student:
+    get:
+      tags: [trainer]
+      operationId: trainerStudent
+      summary: "Trainer: one student's progress, check-ins and plan library"
+      parameters:
+        - { name: id, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Training totals and recent sessions, every check-in (newest first) and the plans.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  name: { type: string }
+                  progress: { type: object }
+                  assessments: { type: array, items: { type: object } }
+                  plans: { type: array, items: { type: object } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Not found. }
+  /api/trainer/plans:
+    post:
+      tags: [trainer]
+      operationId: trainerPlanSave
+      summary: "Trainer: add a plan to a student's library, or replace one (same id)"
+      description: >-
+        A plan file (lib/plan-share.js). Its week and programmes are dropped: the student picks
+        the day. At most 30 plans per student. Audited.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId, plan]
+              properties:
+                studentId: { type: string }
+                id: { type: string }
+                name: { type: string, maxLength: 80 }
+                plan: { type: object }
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  id: { type: string }
+        '400': { description: The request was not valid. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Not found. }
+  /api/trainer/plans/delete:
+    post:
+      tags: [trainer]
+      operationId: trainerPlanDelete
+      summary: "Trainer: remove a plan from a student's library"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId, id]
+              properties:
+                studentId: { type: string }
+                id: { type: string }
+      responses:
+        '200': { description: Removed. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Not found. }
+  /api/my-plans:
+    get:
+      tags: [trainer]
+      operationId: myPlans
+      summary: 'The plans your trainer wrote for you'
+      responses:
+        '200':
+          description: The library, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plans: { type: array, items: { type: object } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/assessments:
     get:
       tags: [trainer]
       operationId: assessments
-      summary: 'Check-ins your trainer recorded, waiting for this app'
+      summary: 'Check-ins your trainer recorded: waiting for this app, or all of them'
+      parameters:
+        - { name: all, in: query, required: false, schema: { type: string, enum: ['1'] } }
       responses:
         '200':
           description: The waiting check-ins.

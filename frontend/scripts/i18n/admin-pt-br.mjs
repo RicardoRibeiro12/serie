@@ -16,7 +16,7 @@ const SWAPS = [
   [/\bregistado\b/g, 'registrado'], [/\bregistada\b/g, 'registrada'], [/\bregistam\b/g, 'registram'],
   [/\becrã\b/g, 'tela'], [/palavra-passe/g, 'senha'], [/\bpassword\b/g, 'senha'], [/\bpasswords\b/g, 'senhas'],
   [/\butilizadores\b/g, 'usuários'], [/\butilizador\b/g, 'usuário'], [/\bUtilizadores\b/g, 'Usuários'], [/\bUtilizador\b/g, 'Usuário'],
-  [/telemóvel/g, 'celular'], [/\bregistou\b/g, 'registrou'], [/palavras-passe/g, 'senhas'], [/\bcódigo de reposição\b/g, 'código de redefinição'], [/\bcódigos de reposição\b/g, 'códigos de redefinição'], [/\bDescarregar\b/g, 'Baixar'], [/\bdescarrega\b/g, 'baixe'], [/\bDescarrega\b/g, 'Baixe'],
+  [/telemóvel/g, 'celular'], [/\bregistou\b/g, 'registrou'], [/palavras-passe/g, 'senhas'], [/\bcódigo de reposição\b/g, 'código de redefinição'], [/\bcódigos de reposição\b/g, 'códigos de redefinição'], [/\bteu Plano\b/g, 'seu Plano'], [/Escolhe o dia/g, 'Escolha o dia'], [/começa um quando quiseres/g, 'comece um quando quiser'], [/As tuas avaliações/g, 'Suas avaliações'], [/Dá um nome/g, 'Dê um nome'], [/Adiciona pelo menos/g, 'Adicione pelo menos'], [/procura por/g, 'busque por'], [/organiza-os na sua semana/g, 'organiza na semana dele'], [/oxigénio/g, 'oxigênio'], [/\bGuardar\b/g, 'Salvar'], [/\bDescarregar\b/g, 'Baixar'], [/\bdescarrega\b/g, 'baixe'], [/\bDescarrega\b/g, 'Baixe'],
 ]
 const raw = readFileSync(path, 'utf8')
 const nl = raw.includes('\r\n') ? '\r\n' : '\n'

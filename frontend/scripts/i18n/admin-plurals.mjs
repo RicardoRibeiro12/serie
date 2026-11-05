@@ -18,9 +18,18 @@ const KEYS = [
     ['хранятся {0} день', 'хранятся {0} дня', 'хранятся {0} дней'], ['зберігаються {0} день', 'зберігаються {0} дні', 'зберігаються {0} днів'], ['przechowywane {0} dzień', 'przechowywane {0} dni', 'przechowywane {0} dni']],
   ['{0} PR', '{0} PRs', '{0} recorde', '{0} recordes', '{0} record', '{0} records',
     ['{0} рекорд', '{0} рекорда', '{0} рекордов'], ['{0} рекорд', '{0} рекорди', '{0} рекордів'], ['{0} rekord', '{0} rekordy', '{0} rekordów']],
+  // The trainer's student pages (views/Trainer.jsx, TrainerStudent.jsx, TrainerPlansCard.jsx).
+  ['{0} plan', '{0} plans', '{0} plano', '{0} planos', '{0} programme', '{0} programmes',
+    ['{0} план', '{0} плана', '{0} планов'], ['{0} план', '{0} плани', '{0} планів'], ['{0} plan', '{0} plany', '{0} planów']],
+  ['{0} assessment', '{0} assessments', '{0} avaliação', '{0} avaliações', '{0} bilan', '{0} bilans',
+    ['{0} оценка', '{0} оценки', '{0} оценок'], ['{0} оцінка', '{0} оцінки', '{0} оцінок'], ['{0} ocena', '{0} oceny', '{0} ocen']],
+  ['{0} plan for you', '{0} plans for you', '{0} plano para ti', '{0} planos para ti', '{0} programme pour vous', '{0} programmes pour vous',
+    ['{0} план для вас', '{0} плана для вас', '{0} планов для вас'], ['{0} план для вас', '{0} плани для вас', '{0} планів для вас'], ['{0} plan dla ciebie', '{0} plany dla ciebie', '{0} planów dla ciebie']],
+  ['{0} set', '{0} sets', '{0} série', '{0} séries', '{0} série', '{0} séries',
+    ['{0} подход', '{0} подхода', '{0} подходов'], ['{0} підхід', '{0} підходи', '{0} підходів'], ['{0} seria', '{0} serie', '{0} serii']],
 ]
-const BR = { 'guardados': 'mantidos', 'utilizador': 'usuário', 'utilizadores': 'usuários' }
-const br = s => s.replace(/utilizadores|utilizador|guardados/g, m => BR[m])
+const BR = { 'guardados': 'mantidos', 'utilizador': 'usuário', 'utilizadores': 'usuários', 'para ti': 'para você' }
+const br = s => s.replace(/utilizadores|utilizador|guardados|para ti/g, m => BR[m])
 
 for (const f of readdirSync(dir).filter(f => f.endsWith('.js'))) {
   const path = join(dir, f)

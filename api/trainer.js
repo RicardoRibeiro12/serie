@@ -46,6 +46,7 @@ export function dropOffer(db, uid, id) {
 export function forgetUser(db, uid) {
   db.planOffers = (db.planOffers || []).filter(o => o.to !== uid && o.from !== uid);
   db.assessments = (db.assessments || []).filter(a => a.to !== uid);
+  db.studentPlans = (db.studentPlans || []).filter(p => p.to !== uid && p.from !== uid);
   for (const u of db.users) if (u.trainerId === uid) delete u.trainerId;
 }
 
@@ -58,7 +59,7 @@ export const ASSESSMENT_KEYS = ['neck', 'shoulders', 'chest', 'waist', 'hips', '
 const MAX_NOTE = 500;
 const inRange = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
 
-export function makeAssessment({ trainer, student, date, weight, values, note, now = Date.now(), id }) {
+export function makeAssessment({ trainer, student, date, weight, values, body, note, now = Date.now(), id }) {
   if (!student || student.trainerId !== trainer.id) return { error: 'not your student' };
   if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date + 'T12:00:00Z'))) return { error: 'date must be YYYY-MM-DD' };
   if (Date.parse(date + 'T00:00:00Z') > now + 86400000) return { error: 'the date is in the future' };
@@ -75,16 +76,114 @@ export function makeAssessment({ trainer, student, date, weight, values, note, n
     if (k === 'bodyFat' ? !inRange(v, 1, 75) : !inRange(v, 5, 250)) return { error: 'out of range: ' + k };
     vals[k] = Math.round(v * 10) / 10;
   }
-  if (clean.weight == null && !Object.keys(vals).length) return { error: 'nothing measured' };
+  const b = cleanBody(body);
+  if (b.error) return { error: b.error };
+  const hasBody = Object.keys(b.body).some(k => k !== 'sex');
+  if (clean.weight == null && !Object.keys(vals).length && !hasBody) return { error: 'nothing measured' };
   const n = typeof note === 'string' ? note.trim().slice(0, MAX_NOTE) : '';
-  return { assessment: { id, to: student.id, from: trainer.id, date, ...clean, values: vals, ...(n ? { note: n } : {}), at: new Date(now).toISOString() } };
+  return { assessment: { id, to: student.id, from: trainer.id, date, ...clean, values: vals, ...(Object.keys(b.body).length ? { body: b.body } : {}), ...(n ? { note: n } : {}), at: new Date(now).toISOString() } };
 }
 
-export const assessmentsFor = (db, uid) => (db.assessments || []).filter(a => a.to === uid);
+// Waiting for the student's app to fold weight and body fat into their own history.
+export const assessmentsFor = (db, uid) => (db.assessments || []).filter(a => a.to === uid && !a.merged);
+// Every check-in of a student, newest first: what the trainer and the student both read back.
+export const assessmentHistory = (db, uid) => (db.assessments || []).filter(a => a.to === uid)
+  .sort((a, b) => (b.date === a.date ? String(b.at).localeCompare(String(a.at)) : b.date.localeCompare(a.date)));
 
+// The app merged them: they stay as the student's assessment history, only no longer pending.
 export function dropAssessments(db, uid, ids) {
   const set = new Set(ids);
-  const before = (db.assessments || []).length;
-  db.assessments = (db.assessments || []).filter(a => !(a.to === uid && set.has(a.id)));
-  return before - db.assessments.length;
+  let n = 0;
+  for (const a of db.assessments || []) if (a.to === uid && set.has(a.id) && !a.merged) { a.merged = true; n++; }
+  return n;
+}
+
+// A student keeps at most this many check-ins; the oldest merged ones go first.
+export const MAX_HISTORY = 300;
+export function addAssessment(db, a) {
+  db.assessments = db.assessments || [];
+  db.assessments.push(a);
+  const mine = assessmentHistory(db, a.to);
+  if (mine.length > MAX_HISTORY) {
+    const drop = new Set(mine.filter(x => x.merged).slice(MAX_HISTORY - mine.length).map(x => x.id));
+    db.assessments = db.assessments.filter(x => !(x.to === a.to && drop.has(x.id)));
+  }
+}
+
+// The body-composition reading of a check-in (bioimpedance scale, tape, heart rate). Canonical
+// units: years, cm, kcal, ml/kg/min, bpm, level, litres, %, kg. BMI, lean mass and the theoretical
+// maximum heart rate are worked out from these when shown (frontend lib/body-comp.js).
+export const BODY_RANGES = {
+  age: [10, 100], height: [100, 230], restingKcal: [500, 5000], restingVo2: [1, 20], hrRest: [25, 140],
+  visceral: [1, 60], waterL: [10, 90], waterPct: [25, 80], ecwL: [3, 45], muscleKg: [5, 90], leanKg: [10, 160]
+};
+function cleanBody(body) {
+  if (body == null) return { body: {} };
+  if (typeof body !== 'object' || Array.isArray(body)) return { error: 'body must be an object' };
+  const out = {};
+  for (const [k, v] of Object.entries(body)) {
+    if (v == null || v === '') continue;
+    if (k === 'sex') { if (v !== 'm' && v !== 'f') return { error: 'sex must be m or f' }; out.sex = v; continue; }
+    const r = BODY_RANGES[k];
+    if (!r) return { error: 'unknown body value: ' + k };
+    if (!inRange(v, r[0], r[1])) return { error: 'out of range: ' + k };
+    out[k] = Math.round(v * 10) / 10;
+  }
+  return { body: out };
+}
+
+// ---- the trainer's plan library for one student. The trainer writes the routines; the student
+// chooses which one to train on a day, or puts them on their own week. So a library plan never
+// carries a schedule: the week and the programmes (which hold weekdays) are taken out here.
+export const MAX_LIBRARY = 30;
+export const plansFor = (db, uid) => (db.studentPlans || []).filter(p => p.to === uid)
+  .sort((a, b) => String(b.updated || b.at).localeCompare(String(a.updated || a.at)));
+
+export function makeLibraryPlan({ trainer, student, plan, name, id, now = Date.now() }) {
+  const made = makeOffer({ trainer, student, plan, name, now, id });
+  if (made.error) return made;
+  const p = JSON.parse(made.offer.plan);
+  p.week = {};
+  delete p.programmes; delete p.programme_fmt;
+  return { plan: { ...made.offer, plan: JSON.stringify(p), updated: made.offer.at } };
+}
+
+// Adds a plan or replaces one the same trainer wrote (same id). Returns an error string or null.
+export function putLibraryPlan(db, entry) {
+  db.studentPlans = db.studentPlans || [];
+  const i = db.studentPlans.findIndex(p => p.id === entry.id && p.to === entry.to);
+  if (i >= 0) {
+    if (db.studentPlans[i].from !== entry.from) return 'not your plan';
+    db.studentPlans[i] = { ...entry, at: db.studentPlans[i].at };
+    return null;
+  }
+  if (plansFor(db, entry.to).length >= MAX_LIBRARY) return 'this student already has ' + MAX_LIBRARY + ' plans';
+  db.studentPlans.push(entry);
+  return null;
+}
+
+export function dropLibraryPlan(db, { trainerId, studentId, id }) {
+  const before = (db.studentPlans || []).length;
+  db.studentPlans = (db.studentPlans || []).filter(p => !(p.id === id && p.to === studentId && p.from === trainerId));
+  return db.studentPlans.length !== before;
+}
+
+// What the trainer reads about a student's training: the latest sessions, newest first, and the
+// weigh-ins. Only totals, never the notes the student wrote for themself.
+export function progressOf(S, records, { sessions = 30 } = {}) {
+  const ws = records(S.workouts).filter(w => w && w.d).sort((a, b) => (a.d === b.d ? (a.start || 0) - (b.start || 0) : a.d < b.d ? -1 : 1));
+  const recent = ws.slice(-sessions).reverse().map(w => {
+    const entries = Array.isArray(w.entries) ? w.entries : [];
+    let sets = 0, volume = 0;
+    for (const e of entries) for (const s of Array.isArray(e && e.sets) ? e.sets : []) {
+      if (!s || s.done === false) continue;
+      sets++;
+      if (Number(s.w) > 0 && Number(s.r) > 0) volume += Number(s.w) * Number(s.r);
+    }
+    const min = w.start && w.end && w.end > w.start ? Math.round((w.end - w.start) / 60000) : null;
+    return { d: w.d, name: typeof w.name === 'string' ? w.name.slice(0, 80) : '', exercises: entries.length, sets, volume: Math.round(volume), min };
+  });
+  const weights = records(S.bodyweight).filter(e => e && e.d && Number(e.w) > 0).sort((a, b) => a.d.localeCompare(b.d)).slice(-60).map(e => ({ d: e.d, w: Number(e.w) }));
+  const since = new Date(Date.now() - 28 * 86400000).toISOString().slice(0, 10);
+  return { total: ws.length, last28: ws.filter(w => w.d >= since).length, recent, weights, unit: S.unit === 'lb' ? 'lb' : 'kg' };
 }

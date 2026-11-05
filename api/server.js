@@ -43,7 +43,7 @@ import { createIntegrations } from './integrations/index.js';
 import { integrationRoutes } from './integrations/routes.js';
 import { excusedOn, nudgeFor, nudgeWindowOpen, toneOf } from './nudge.js';
 import { verifyEdgeSignature, edgeClientIp } from './edge-proxy.js';
-import { isTrainer, studentsOf, offerFor, makeOffer, putOffer, dropOffer, forgetUser, makeAssessment, assessmentsFor, dropAssessments } from './trainer.js';
+import { isTrainer, studentsOf, offerFor, makeOffer, putOffer, dropOffer, forgetUser, makeAssessment, assessmentsFor, assessmentHistory, addAssessment, dropAssessments, plansFor, makeLibraryPlan, putLibraryPlan, dropLibraryPlan, progressOf } from './trainer.js';
 import { wrappedPushYear, wrappedSummary, wrappedPushOwed, wrappedPush } from './wrapped.js';
 
 const PORT = +(process.env.PORT || 3000);
@@ -164,7 +164,8 @@ db.subs = db.subs || [];
 db.invites = db.invites || [];
 db.deviceLinks = db.deviceLinks || [];
 db.planOffers = db.planOffers || [];   // plans a trainer sent, waiting for the student (trainer.js)
-db.assessments = db.assessments || [];   // a trainer's check-in measurements, waiting for the student's app   // unused one-time device links, hashed (device-link.js)
+db.assessments = db.assessments || [];
+db.studentPlans = db.studentPlans || [];   // each student's plan library, written by their trainer (trainer.js)   // a trainer's check-in measurements, waiting for the student's app   // unused one-time device links, hashed (device-link.js)
 const isAdmin = user => !!user && (user.admin === true || ADMIN_UIDS.includes(user.id));
 // One owner per instance, any number of admins. Admins run the place day to day (users, invites,
 // the Coach); the owner is the one admin the others cannot act on: only the owner appoints or
@@ -1200,6 +1201,11 @@ function loginTarget(body) {
 }
 const acctKey = u => 'acct:' + u.id;
 const passkeyCount = u => db.creds.filter(c => c.userId === u.id).length;
+// A check-in as the apps read it: the trainer's name rather than their id.
+const publicAssessment = a => {
+  const from = db.users.find(u => u.id === a.from);
+  return { id: a.id, date: a.date, weight: a.weight ?? null, values: a.values || {}, body: a.body || {}, note: a.note || null, from: from ? from.name : null, merged: !!a.merged };
+};
 const publicUser = u => ({ id: u.id, name: u.name, admin: isAdmin(u), ...(isOwner(u) ? { owner: true } : {}), ...(isTrainer(u) ? { trainer: true } : {}) });
 const POLICY_ERRORS = {
   'too-short': `the password needs at least ${MIN_LENGTH} characters`,
@@ -2986,11 +2992,18 @@ const routes = {
       // The latest weigh-in and body-fat reading, for the trainer's overview of the check-ins.
       const bw = records(S.bodyweight).filter(e => e && e.d && Number(e.w) > 0).sort((a, b) => a.d.localeCompare(b.d)).pop();
       const bf = records(S.measurements).filter(e => e && e.d && Number(e.bodyFat) > 0).sort((a, b) => a.d.localeCompare(b.d)).pop();
+      // A check-in the trainer just saved counts at once, before the student's app has merged it.
+      const hist = assessmentHistory(db, u.id);
+      const aw = hist.find(a => a.weight > 0), af = hist.find(a => a.values && a.values.bodyFat > 0);
+      const bwN = aw && (!bw || aw.date > bw.d) ? { d: aw.date, w: S.unit === 'lb' ? Math.round(aw.weight * 2.20462 * 10) / 10 : aw.weight } : bw && { d: bw.d, w: Number(bw.w) };
+      const bfN = af && (!bf || af.date > bf.d) ? { d: af.date, v: af.values.bodyFat } : bf && { d: bf.d, v: Number(bf.bodyFat) };
       return {
         id: u.id, name: u.name, workouts: workouts.length, lastWorkout: last ? last.d : null,
         unit: S.unit === 'lb' ? 'lb' : 'kg',
-        weight: bw ? { d: bw.d, w: Number(bw.w) } : null,
-        bodyFat: bf ? { d: bf.d, v: Number(bf.bodyFat) } : null,
+        weight: bwN || null,
+        bodyFat: bfN || null,
+        assessments: hist.length,
+        plans: plansFor(db, u.id).length,
         pending: offer && offer.from === me.id ? { name: offer.name, at: offer.at } : null,
         pendingAssessments: assessmentsFor(db, u.id).length
       };
@@ -3036,9 +3049,9 @@ const routes = {
     const body = await readBody(req);
     const student = db.users.find(x => x.id === body.studentId);
     if (student && assessmentsFor(db, student.id).length >= 50) return json(res, 400, { error: 'too many check-ins waiting for this student' });
-    const made = makeAssessment({ trainer: me, student, date: body.date, weight: body.weight, values: body.values, note: body.note, id: crypto.randomBytes(9).toString('base64url') });
+    const made = makeAssessment({ trainer: me, student, date: body.date, weight: body.weight, values: body.values, body: body.body, note: body.note, id: crypto.randomBytes(9).toString('base64url') });
     if (made.error) return json(res, made.error === 'not your student' ? 404 : 400, { error: made.error });
-    db.assessments.push(made.assessment);
+    addAssessment(db, made.assessment);
     saveDb();
     audit(req, 'trainer.assessment', { user: me, target: student, msg: made.assessment.date });
     json(res, 200, { ok: true, id: made.assessment.id });
@@ -3047,10 +3060,9 @@ const routes = {
   'GET /api/assessments': async (req, res) => {
     const me = readSession(req);
     if (!me) return json(res, 401, { error: 'not signed in' });
-    const list = assessmentsFor(db, me.id).map(a => {
-      const from = db.users.find(u => u.id === a.from);
-      return { id: a.id, date: a.date, weight: a.weight ?? null, values: a.values, note: a.note || null, from: from ? from.name : null };
-    });
+    // ?all=1: the whole history (the student's Assessments screen); else only those still to merge.
+    const all = new URL(req.url, 'http://x').searchParams.get('all') === '1';
+    const list = (all ? assessmentHistory(db, me.id) : assessmentsFor(db, me.id)).map(publicAssessment);
     json(res, 200, { assessments: list });
   },
 
@@ -3063,6 +3075,58 @@ const routes = {
     const n = dropAssessments(db, me.id, ids);
     if (n) saveDb();
     json(res, 200, { ok: true, removed: n });
+  },
+
+  // One student, for their trainer: training progress, every check-in (recorded on the server, so
+  // a new one shows here at once, before the student's app has merged it) and the plan library.
+  'GET /api/trainer/student': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    if (!isTrainer(me)) return json(res, 403, { error: 'forbidden' });
+    const id = new URL(req.url, 'http://x').searchParams.get('id');
+    const u = studentsOf(db, me).find(x => x.id === id);
+    if (!u) return json(res, 404, { error: 'not your student' });
+    const S = readState(u.id) || {};
+    const plans = plansFor(db, u.id).map(p => ({ id: p.id, name: p.name, at: p.at, updated: p.updated, mine: p.from === me.id, plan: JSON.parse(p.plan) }));
+    json(res, 200, { id: u.id, name: u.name, progress: progressOf(S, records), assessments: assessmentHistory(db, u.id).map(publicAssessment), plans });
+  },
+
+  // Adds a plan to a student's library, or replaces one this trainer wrote (same id).
+  'POST /api/trainer/plans': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    if (!isTrainer(me)) return json(res, 403, { error: 'forbidden' });
+    const body = await readBody(req);
+    const student = db.users.find(x => x.id === body.studentId);
+    const id = typeof body.id === 'string' && /^[\w-]{6,24}$/.test(body.id) ? body.id : crypto.randomBytes(9).toString('base64url');
+    const made = makeLibraryPlan({ trainer: me, student, plan: body.plan, name: body.name, id });
+    if (made.error) return json(res, made.error === 'not your student' ? 404 : 400, { error: made.error });
+    const err = putLibraryPlan(db, made.plan);
+    if (err) return json(res, err === 'not your plan' ? 403 : 400, { error: err });
+    saveDb();
+    audit(req, 'trainer.plan.send', { user: me, target: student, msg: made.plan.name });
+    json(res, 200, { ok: true, id: made.plan.id });
+  },
+
+  'POST /api/trainer/plans/delete': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    if (!isTrainer(me)) return json(res, 403, { error: 'forbidden' });
+    const body = await readBody(req);
+    if (!dropLibraryPlan(db, { trainerId: me.id, studentId: text(body.studentId), id: text(body.id) })) return json(res, 404, { error: 'no such plan' });
+    saveDb();
+    json(res, 200, { ok: true });
+  },
+
+  // The student's side of the library: the plans their trainer wrote for them.
+  'GET /api/my-plans': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    const plans = plansFor(db, me.id).map(p => {
+      const from = db.users.find(u => u.id === p.from);
+      return { id: p.id, name: p.name, at: p.at, updated: p.updated, from: from ? from.name : null, plan: JSON.parse(p.plan) };
+    });
+    json(res, 200, { plans });
   },
 
   // The student's side: the plan their trainer sent, if one is waiting.
