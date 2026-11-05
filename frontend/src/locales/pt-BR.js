@@ -4,6 +4,10 @@
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "show it at the front desk": "mostre na recepção",
+  "Show the QR larger": "Mostrar o QR maior",
+  "QR for the front desk": "QR para a recepção",
+  "Show the QR at the front desk when you arrive and when you leave. If you forget on the way out, you are checked out at the end of the day.": "Mostre o QR na recepção quando chegar e quando sair. Se esquecer na saída, ela fica registrada no fim do dia.",
   "Card check-in": "Check-in",
   "Card check-out": "Check-out",
   "Gym check-in": "Check-in",

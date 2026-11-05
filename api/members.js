@@ -5,11 +5,10 @@
 // the QR and the server looks the code up, so a number copied off someone's card opens nothing.
 // Reissuing a card gives it a new code; the old QR stops working at once.
 //
-// A visit is one entry and, later, its exit. The member taps Check-in / Check-out in the app, or
-// the desk scans the card (a scan toggles: in if they are out, out if they are in). A visit left
-// open is closed on read after MAX_VISIT_MS, marked `auto`, so a forgotten check-out does not
-// leave someone "in the gym" for days.
-export const MAX_VISIT_MS = 6 * 3600 * 1000;
+// A visit is one entry and, later, its exit, both made by the front desk scanning the card (a scan
+// toggles: in if they are out, out if they are in). Whoever is still in when the day ends is checked
+// out at its last minute, marked `auto`: nobody stays "in the gym" overnight because they walked
+// out past the desk. Days are the server's local days (TZ, Europe/Lisbon for a Portuguese gym).
 export const KEEP_DAYS = 400;
 export const STATUSES = ['active', 'suspended'];
 
@@ -43,12 +42,17 @@ export function setCardStatus(db, uid, status) {
   return { card };
 }
 
-// Visits, with stale open ones closed. Mutates db.visits; returns true when something changed.
+// The last moment of the local day ms falls in.
+export const endOfDay = ms => { const d = new Date(ms); d.setHours(23, 59, 59, 0); return d.getTime(); };
+
+// Visits, with the ones left open on an earlier day closed. Mutates db.visits; returns true when
+// something changed.
 export function closeStale(db, now = Date.now()) {
   let changed = false;
   for (const v of db.visits || []) {
-    if (!v.out && now - Date.parse(v.in) > MAX_VISIT_MS) {
-      v.out = new Date(Date.parse(v.in) + MAX_VISIT_MS).toISOString();
+    const end = endOfDay(Date.parse(v.in));
+    if (!v.out && now > end) {
+      v.out = new Date(end).toISOString();
       v.auto = true;
       changed = true;
     }

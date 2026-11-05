@@ -4018,4 +4018,8 @@ export default {
   "Gym check-out": "Check-out",
   "Card check-in": "Check-in",
   "Card check-out": "Check-out",
+  "show it at the front desk": "mostra-o na receção",
+  "Show the QR larger": "Mostrar o QR maior",
+  "QR for the front desk": "QR para a receção",
+  "Show the QR at the front desk when you arrive and when you leave. If you forget on the way out, you are checked out at the end of the day.": "Mostra o QR na receção quando chegas e quando sais. Se te esqueceres à saída, a saída fica registada no fim do dia.",
 }

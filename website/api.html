@@ -249,7 +249,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <p class="api-facts">
     <span>OpenAPI 3.1.0</span>
     <span>openGym v1.4.3</span>
-    <span>111 endpoints</span>
+    <span>110 endpoints</span>
     <span>AGPL-3.0-or-later</span>
   </p>
 
@@ -2977,50 +2977,6 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <div class="prow rrow">
     <span class="r-code s4">401</span>
     <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
-  </div>
-    </div>
-  </div>
-</details>
-
-<details class="ep" id="op-checkIn">
-  <summary>
-    <span class="m post">POST</span>
-    <span class="ep-path"><code>/api/checkin</code></span>
-    <span class="ep-chev" aria-hidden="true"></span>
-    <span class="ep-sum">Check in to or out of the gym with your card</span>
-  </summary>
-  <div class="ep-body">
-
-    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
-
-<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
-  <div class="prow">
-    <span class="p-name">dir<em class="p-req" title="required">required</em></span>
-    <span class="p-type">&quot;in&quot; | &quot;out&quot;</span>
-    <span class="p-desc"></span>
-  </div>
-</div>
-    <p class="ep-h">Responses</p>
-    <div class="ptab">
-  <div class="prow rrow">
-    <span class="r-code s2">200</span>
-    <span class="p-desc">Recorded.</span>
-  </div>
-  <div class="prow rrow">
-    <span class="r-code s4">400</span>
-    <span class="p-desc">The request was not valid.</span>
-  </div>
-  <div class="prow rrow">
-    <span class="r-code s4">401</span>
-    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
-  </div>
-  <div class="prow rrow">
-    <span class="r-code s4">404</span>
-    <span class="p-desc">No card.</span>
-  </div>
-  <div class="prow rrow">
-    <span class="r-code s4">409</span>
-    <span class="p-desc">Card suspended</span>
   </div>
     </div>
   </div>

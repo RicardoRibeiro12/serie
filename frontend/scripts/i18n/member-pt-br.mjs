@@ -16,7 +16,10 @@ const BR = {
   'in the gym now': 'na academia agora',
   'Your gym has not issued you a card yet. Ask at the front desk.': 'Sua academia ainda não criou um cartão para você. Peça na recepção.',
   'Show the QR at the front desk, or use the buttons when you arrive and leave.': 'Mostre o QR na recepção, ou use os botões quando chegar e sair.',
-  'tap to check in': 'toque para dar entrada'
+  'tap to check in': 'toque para dar entrada',
+  'show it at the front desk': 'mostre na recepção',
+  'QR for the front desk': 'QR para a recepção',
+  'Show the QR at the front desk when you arrive and when you leave. If you forget on the way out, you are checked out at the end of the day.': 'Mostre o QR na recepção quando chegar e quando sair. Se esquecer na saída, ela fica registrada no fim do dia.'
 }
 const raw = readFileSync(path, 'utf8')
 const nl = raw.includes('\r\n') ? '\r\n' : '\n'

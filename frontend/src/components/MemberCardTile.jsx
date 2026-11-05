@@ -22,7 +22,7 @@ export default function MemberCardTile() {
     <span className="lrow-i" style={{ background: 'var(--acc)', color: 'var(--on-acc)' }} aria-hidden="true"><Icon name="qr" /></span>
     <span className="grow mc-tile-copy">
       <span className="ttl">{t('Membership card')}</span>
-      <span className="small dim">{data.card.number} · {data.inside ? t('in the gym now') : t('tap to check in')}</span>
+      <span className="small dim">{data.card.number} · {data.inside ? t('in the gym now') : t('show it at the front desk')}</span>
     </span>
     <Icon name="chevronRight" className="dim" />
   </button>

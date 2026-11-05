@@ -38,5 +38,9 @@
   "{0} checked out at {1}": ["{0} saiu às {1}", "{0} est sorti à {1}"],
   "Changed a membership card": ["Alterou um cartão de sócio", "A modifié une carte de membre"],
   "Card check-in": ["Check-in", "Check-in"],
-  "Card check-out": ["Check-out", "Check-out"]
+  "Card check-out": ["Check-out", "Check-out"],
+  "show it at the front desk": ["mostra-o na receção", "à montrer à l’accueil"],
+  "Show the QR larger": ["Mostrar o QR maior", "Afficher le QR en grand"],
+  "QR for the front desk": ["QR para a receção", "QR pour l’accueil"],
+  "Show the QR at the front desk when you arrive and when you leave. If you forget on the way out, you are checked out at the end of the day.": ["Mostra o QR na receção quando chegas e quando sais. Se te esqueceres à saída, a saída fica registada no fim do dia.", "Montrez le QR à l’accueil en arrivant et en partant. Si vous oubliez en sortant, la sortie est enregistrée en fin de journée."]
 }

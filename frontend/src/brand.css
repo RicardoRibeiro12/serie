@@ -146,27 +146,45 @@ body { font-family: var(--font-display); }
 .tp-card .ts-plans{margin-top:12px}
 .tp-assess{margin-top:6px}
 
-/* Membership card (views/MemberCard.jsx): a bank-card shape, 85.6 × 54 mm, dark in both themes */
-.mc-card{position:relative;aspect-ratio:1.586;max-width:440px;margin:4px auto 10px;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,#1d1c19 0%,#141412 60%,#2a1a10 100%);color:#f2f0ea;box-shadow:0 12px 30px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.06);overflow:hidden}
-.mc-card::after{content:'';position:absolute;inset:auto -20% -55% auto;width:70%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,107,44,.28),transparent 65%);pointer-events:none}
-.mc-off{filter:grayscale(1);opacity:.75}
-.mc-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.mc-gym{font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:.95rem}
-.mc-status{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px}
-.mc-status.on{background:#2e9d5b;color:#fff}
-.mc-status.off{background:#d64545;color:#fff}
-.mc-body{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;position:relative;z-index:1}
-.mc-who{display:flex;gap:12px;align-items:center;min-width:0}
-.mc-ini{width:52px;height:52px;flex:none;border-radius:50%;display:grid;place-items:center;background:#ff6b2c;color:#0f0f0e;font-weight:800;font-size:1.1rem}
-.mc-name{font-weight:700;font-size:1.05rem;line-height:1.2;overflow-wrap:anywhere}
-.mc-role{font-size:.78rem;opacity:.7}
-.mc-num{font-family:var(--font-mono);font-size:.85rem;letter-spacing:.08em;margin-top:4px}
-.mc-qr{flex:none;background:#fff;padding:6px;border-radius:10px;width:clamp(86px,28vw,124px);aspect-ratio:1;display:grid;place-items:center;color:#0f0f0e}
-.mc-qr canvas{width:100%;height:100%;image-rendering:pixelated}
-.mc-hint{text-align:center;margin:0 auto 12px;max-width:440px}
-.mc-visit .ttl{margin-bottom:10px}
-.mc-acts{gap:8px;flex-wrap:wrap}
-.mc-acts .btn{flex:1 1 140px}
+/* Membership card (views/MemberCard.jsx). A bank card, 85.6 × 54 mm, in the brand's warm black in
+   both themes: the gym's name leads, the member and number sit low left, the QR sits on a white
+   plate sized by the QR itself (104 px + a quiet zone), so it is never clipped. */
+.mc-card{position:relative;isolation:isolate;aspect-ratio:1.586;width:100%;max-width:420px;margin:6px auto 0;border-radius:16px;padding:20px 20px 18px 22px;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto 1fr auto;column-gap:16px;
+  background:#151513;color:#f2f0ea;overflow:hidden;
+  box-shadow:0 18px 40px -12px rgba(15,15,14,.45),0 2px 6px rgba(15,15,14,.25)}
+/* One stripe of the brand orange along the top, like the issuer band of a real card. */
+.mc-card::before{content:'';position:absolute;inset:0 0 auto;height:5px;background:#ff6b2c;z-index:-1}
+.mc-off{filter:grayscale(1)}
+.mc-off .mc-name,.mc-off .mc-gym{opacity:.6}
+.mc-head{grid-column:1/-1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.mc-gym{font-weight:800;font-stretch:75%;text-transform:uppercase;font-size:clamp(1.25rem,5.4vw,1.6rem);line-height:1;letter-spacing:.01em;overflow-wrap:anywhere}
+.mc-kind{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:#a8a69e}
+.mc-who{grid-column:1;grid-row:3;align-self:end;min-width:0;display:flex;flex-direction:column;gap:6px;padding-bottom:18px}
+.mc-name{font-weight:700;font-size:1.15rem;line-height:1.15;overflow-wrap:anywhere}
+.mc-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+.mc-num{font-family:var(--font-mono);font-size:.82rem;letter-spacing:.1em;color:#d9d6cc}
+.mc-status{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#d9d6cc}
+.mc-dot{width:7px;height:7px;border-radius:50%;background:#3fbf73;box-shadow:0 0 0 3px rgba(63,191,115,.18)}
+.mc-status.off .mc-dot{background:#ef5b5b;box-shadow:0 0 0 3px rgba(239,91,91,.18)}
+.mc-qr{grid-column:2;grid-row:2/4;align-self:end;display:grid;place-items:center;padding:8px;border:0;border-radius:10px;background:#fff;color:#151513;cursor:zoom-in;margin:0}
+.mc-qr:disabled{cursor:default;width:120px;height:120px}
+.mc-qr:focus-visible{outline:2px solid #ff6b2c;outline-offset:3px}
+.mc-qr .icon{font-size:28px}
+.mc-brand{position:absolute;left:22px;bottom:12px;display:flex;align-items:center;gap:6px;font-size:.64rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#7d7b74}
+.mc-mark{width:8px;height:8px;background:#ff6b2c}
+/* Below ~360 px the fixed card proportion cannot hold the name and the QR: the card grows instead. */
+@media (max-width:360px){.mc-card{aspect-ratio:auto;min-height:190px;padding:16px 14px 14px 16px;column-gap:10px;row-gap:14px}.mc-brand{left:16px}}
+.mc-state{max-width:420px;margin:14px auto 0;text-align:center;font-weight:600}
+.mc-hint{max-width:420px;margin:8px auto 0;text-align:center;font-size:var(--fs-footnote);color:var(--label-2,inherit);text-wrap:pretty}
+.mc-wallet{margin-top:18px}
+/* The QR large on white for the desk scanner, over everything. */
+.mc-big{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:#fff;color:#151513;padding:24px}
+.mc-big-in{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.mc-big-name{margin-top:12px;font-weight:700;font-size:1.25rem}
+.mc-big-num{font-family:var(--font-mono);font-size:.9rem;letter-spacing:.08em;color:#4a4843}
+.mc-big-close{margin-top:18px;min-height:44px;padding:0 22px;border-radius:999px;border:1px solid #d9d5ca;background:#fff;color:#151513;font:inherit;font-weight:600;cursor:pointer}
+.mc-big-close:focus-visible{outline:2px solid #b8430f;outline-offset:2px}
 .mc-tile{width:100%;text-align:start;border:0;font:inherit;color:inherit;cursor:pointer;display:flex;align-items:center;gap:12px}
 .mc-tile-copy{display:flex;flex-direction:column;min-width:0}
 

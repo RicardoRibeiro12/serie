@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { issueCard, cardByCode, setCardStatus, checkInOut, visitReport, closeStale, qrText, codeFromQr, MAX_VISIT_MS } from '../members.js';
+import { issueCard, cardByCode, setCardStatus, checkInOut, visitReport, closeStale, qrText, codeFromQr, endOfDay } from '../members.js';
 
 const fresh = () => ({ users: [], memberCards: [], visits: [] });
 const T0 = Date.parse('2026-11-05T08:00:00Z');
@@ -37,13 +37,15 @@ test('a suspended card or no card opens nothing', () => {
   assert.ok(setCardStatus(db, 'u1', 'bogus').error);
 });
 
-test('a forgotten check-out closes itself after the limit', () => {
+test('whoever is still in when the day ends is checked out at its last minute', () => {
   const db = fresh();
   issueCard(db, { uid: 'u1', code: 'a', now: T0 });
   checkInOut(db, { uid: 'u1', dir: 'in', by: 'self', now: T0, id: 'v1' });
-  assert.equal(closeStale(db, T0 + MAX_VISIT_MS + 1), true);
+  assert.equal(closeStale(db, endOfDay(T0) - 1000), false);   // still that day: stays in
+  assert.equal(closeStale(db, endOfDay(T0) + 1000), true);
   assert.equal(db.visits[0].auto, true);
-  assert.equal(checkInOut(db, { uid: 'u1', dir: 'in', by: 'self', now: T0 + MAX_VISIT_MS + 2, id: 'v2' }).dir, 'in');
+  assert.equal(Date.parse(db.visits[0].out), endOfDay(T0));
+  assert.equal(checkInOut(db, { uid: 'u1', dir: 'in', by: 'desk', now: endOfDay(T0) + 3600000, id: 'v2' }).dir, 'in');
 });
 
 test('the report counts entries per day, who is in, and the average stay', () => {

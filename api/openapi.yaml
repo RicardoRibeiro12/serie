@@ -3387,26 +3387,6 @@ paths:
                   card: { type: object, nullable: true }
                   inside: { type: string, nullable: true, description: Entry time of the open visit. }
         '401': { $ref: '#/components/responses/Unauthorized' }
-  /api/checkin:
-    post:
-      tags: [members]
-      operationId: checkIn
-      summary: 'Check in to or out of the gym with your card'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [dir]
-              properties:
-                dir: { type: string, enum: [in, out] }
-      responses:
-        '200': { description: Recorded. }
-        '400': { description: The request was not valid. }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { description: No card. }
-        '409': { description: Card suspended, already in, or not in. }
   /api/admin/cards:
     get:
       tags: [members]

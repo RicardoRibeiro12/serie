@@ -169,7 +169,7 @@ db.assessments = db.assessments || [];
 db.studentPlans = db.studentPlans || [];
 db.memberCards = db.memberCards || [];   // membership cards (members.js)
 db.visits = db.visits || [];   // gym entries and exits (members.js)
-const GYM_NAME = (process.env.GYM_NAME || 'Série').slice(0, 60);   // each student's plan library, written by their trainer (trainer.js)   // a trainer's check-in measurements, waiting for the student's app   // unused one-time device links, hashed (device-link.js)
+const GYM_NAME = (process.env.GYM_NAME || 'Ginásio Série').slice(0, 60);   // each student's plan library, written by their trainer (trainer.js)   // a trainer's check-in measurements, waiting for the student's app   // unused one-time device links, hashed (device-link.js)
 const isAdmin = user => !!user && (user.admin === true || ADMIN_UIDS.includes(user.id));
 // One owner per instance, any number of admins. Admins run the place day to day (users, invites,
 // the Coach); the owner is the one admin the others cannot act on: only the owner appoints or
@@ -3164,18 +3164,6 @@ const routes = {
     if (!card) return json(res, 200, { card: null });
     const open = openVisit(db, me.id);
     json(res, 200, { card: { number: card.number, qr: qrText(card), status: card.status, since: card.created, name: me.name, gym: GYM_NAME, role: isTrainer(me) ? 'trainer' : me.trainerId ? 'student' : 'member' }, inside: open ? open.in : null });
-  },
-
-  // The member's own Check-in / Check-out buttons.
-  'POST /api/checkin': async (req, res) => {
-    const me = readSession(req);
-    if (!me) return json(res, 401, { error: 'not signed in' });
-    const body = await readBody(req);
-    if (body.dir !== 'in' && body.dir !== 'out') return json(res, 400, { error: 'dir must be in or out' });
-    const r = checkInOut(db, { uid: me.id, dir: body.dir, by: 'self', id: crypto.randomBytes(9).toString('base64url') });
-    if (r.error) return json(res, r.error === 'no card' ? 404 : 409, { error: r.error });
-    saveDb();
-    json(res, 200, { ok: true, dir: r.dir, at: r.dir === 'in' ? r.visit.in : r.visit.out });
   },
 
   // Every profile with its card (or none) and whether it is in the gym now.
