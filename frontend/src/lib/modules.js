@@ -61,7 +61,8 @@ const TRAINING = ['effort', 'plates', 'watch']
 export const PRESETS = [
   { id: 'training', title: 'Just training', desc: 'Log, plan, progress. Nothing else on the screen.', on: TRAINING },
   { id: 'body', title: 'Training and body', desc: 'Plus weigh-ins, measurements, photos and your health apps.', on: [...TRAINING, 'strength', 'body', 'health'] },
-  { id: 'all', title: 'Everything', desc: 'Streaks, the Coach, themes, the lot.', on: MODULE_IDS },
+  // Série: 'everything' leaves out the openGym gym check-in, which is off unless switched on (isOn).
+  { id: 'all', title: 'Everything', desc: 'Streaks, the Coach, themes, the lot.', on: MODULE_IDS.filter(id => id !== 'checkin') },
 ]
 export const PRESET = Object.fromEntries(PRESETS.map(p => [p.id, p]))
 
@@ -72,7 +73,9 @@ export function isOn(S, id) {
   const v = isMap(S?.modules) ? S.modules[id] : undefined
   if (typeof v === 'boolean') return v
   // Before 1.4.4 the check-in had its own switch in Look & Home; it decides until Modules does.
-  if (id === 'checkin') return S?.checkIn !== false
+  // Série: off unless switched on. The gym issues its own card with a QR (views/MemberCard.jsx), so
+  // the openGym check-in (another gym's barcode, NFC stickers) is not on a member's Home by default.
+  if (id === 'checkin') return S?.checkIn === true
   return true
 }
 

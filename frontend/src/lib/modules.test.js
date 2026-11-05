@@ -13,11 +13,12 @@ describe('modules', () => {
   })
 
   it('a profile from before Modules has every module on', () => {
-    for (const id of MODULE_IDS) expect(isOn({}, id)).toBe(true)
+    // Série: every module but the openGym gym check-in, which the gym's own card replaces.
+    for (const id of MODULE_IDS) expect(isOn({}, id)).toBe(id !== 'checkin')
     expect(isOn(null, 'body')).toBe(true)
     expect(isOn({ modules: 'junk' }, 'body')).toBe(true)
     expect(presetOf({})).toBe('all')
-    expect(onCount({})).toBe(MODULE_IDS.length)
+    expect(onCount({})).toBe(MODULE_IDS.length - 1)
   })
 
   it('reads an explicit choice, and an unknown id is on', () => {
@@ -67,7 +68,7 @@ describe('modules', () => {
   })
 
   it('names what a change switches off', () => {
-    expect(turnedOff({}, presetModules('training')).sort()).toEqual(['body', 'checkin', 'coach', 'health', 'integrations', 'motivation', 'seasonal', 'strength', 'videos'])
+    expect(turnedOff({}, presetModules('training')).sort()).toEqual(['body', 'coach', 'health', 'integrations', 'motivation', 'seasonal', 'strength', 'videos'])
     expect(turnedOff({ modules: { body: false } }, { body: false, coach: false })).toEqual(['coach'])
   })
 })

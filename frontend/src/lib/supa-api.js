@@ -230,7 +230,7 @@ const ROUTES = {
   'GET /api/admin/users': async () => {
     const g = await ownGym()
     const people = (await rpc('gym_people', { p_gym: g.id })) || []
-    return { users: people.map(p => ({ id: p.id, name: p.name, admin: !!p.admin, ...(p.owner ? { owner: true } : {}), ...(p.trainer ? { trainer: true } : {}), trainerId: p.trainerId || null, workouts: p.workouts, lastWorkout: p.lastWorkout, lastSync: p.lastSync, live: null })), invite_only: false, gym: g.name }
+    return { users: people.map(p => ({ id: p.id, name: p.name, admin: !!p.admin, ...(p.owner ? { owner: true } : {}), ...(p.trainer ? { trainer: true } : {}), trainerId: p.trainerId || null, workouts: p.workouts, lastWorkout: p.lastWorkout, lastSync: p.lastSync ? Date.parse(p.lastSync) : null, live: null })), invite_only: false, gym: g.name }
   },
   'GET /api/admin/user': async (b, path) => {
     const g = await ownGym()
@@ -238,7 +238,7 @@ const ROUTES = {
     const p = ((await rpc('gym_people', { p_gym: g.id })) || []).find(x => x.id === id)
     if (!p) throw fail('no such profile', 404)
     // password: a boolean tells the screen this instance has passwords, which shows "Reset password".
-    return { user: { id: p.id, name: p.name, admin: !!p.admin, owner: !!p.owner, trainer: !!p.trainer, trainerId: p.trainerId || null, lastSync: p.lastSync, password: true, credentials: [] }, workouts: [], bodyweight: [], trainers: [] }
+    return { user: { id: p.id, name: p.name, admin: !!p.admin, owner: !!p.owner, trainer: !!p.trainer, trainerId: p.trainerId || null, lastSync: p.lastSync ? Date.parse(p.lastSync) : null, password: true, credentials: [] }, workouts: [], bodyweight: [], trainers: [] }
   },
   'POST /api/admin/user/trainer': async b => {
     const g = await ownGym()

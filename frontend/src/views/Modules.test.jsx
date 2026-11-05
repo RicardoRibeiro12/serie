@@ -55,7 +55,7 @@ describe('the Modules page', () => {
     for (const m of MODULES) {
       expect(row(m.title), m.id).toBeTruthy()
       expect(row(m.title).querySelector('.lrow-s').textContent).toBe(m.desc)
-      expect(sw(m.title).getAttribute('aria-checked')).toBe('true')
+      expect(sw(m.title).getAttribute('aria-checked')).toBe(m.id === 'checkin' ? 'false' : 'true')
     }
     expect(row('Start from').querySelector('.lrow-v').textContent).toBe('Everything')
   })
@@ -67,7 +67,7 @@ describe('the Modules page', () => {
     mount()
     expect(sw('Seasonal themes').getAttribute('aria-checked')).toBe('false')
     expect(row('Start from').querySelector('.lrow-v').textContent).toBe('Custom')
-    expect(host.textContent).toContain('11 of 12 modules on.')
+    expect(host.textContent).toContain('10 of 12 modules on.')
     act(() => sw('Seasonal themes').click())
     expect(isOn(mocks.S, 'seasonal')).toBe(true)
   })
