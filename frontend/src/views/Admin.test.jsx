@@ -79,7 +79,7 @@ describe('Admin user drill-down', () => {
     const rows = [...sheet.querySelectorAll('.list > div')]
     expect(rows.length).toBe(1)
     expect(rows[0].textContent).toContain('Push day')
-    expect(rows[0].textContent).toContain('1 sets')
+    expect(rows[0].textContent).toContain('1 set')
   })
 })
 
@@ -107,7 +107,7 @@ describe('Admin when the users cannot be loaded', () => {
     act(() => retry.click())
     await settle()
     expect(page.querySelector('[role="alert"]')).toBeNull()
-    expect(text(page)).toContain('1 users')
+    expect(text(page)).toContain('1 user')
     expect([...page.querySelectorAll('.item')].some(el => el.textContent.includes('Mallory'))).toBe(true)
   })
 
@@ -115,7 +115,7 @@ describe('Admin when the users cannot be loaded', () => {
     const page = render(<Admin />)
     await settle()
     delete mocks.answers['/api/admin/users']
-    const refresh = page.querySelector('[aria-label="refresh"]')
+    const refresh = page.querySelector('[aria-label="Refresh"]')
     act(() => refresh.click())
     await settle()
     expect(text(page)).toContain('The last update failed')
@@ -138,7 +138,7 @@ describe('Admin roles', () => {
     mocks.answers['/api/admin/audit'] = { events: [], enabled: true, total: 0, retention: {} }
     const { page, buttons } = await openMallory()
     expect(buttons).toContain('Make admin')
-    expect(page.querySelector('[aria-label="clear log"]')).toBeTruthy()
+    expect(page.querySelector('[aria-label="Clear the activity log"]')).toBeTruthy()
     expect(page.textContent).toContain('owner')
   })
   it('an admin who is not the owner gets neither', async () => {
@@ -147,6 +147,6 @@ describe('Admin roles', () => {
     const { page, buttons } = await openMallory()
     expect(buttons).not.toContain('Make admin')
     expect(buttons).toContain('Disable account')
-    expect(page.querySelector('[aria-label="clear log"]')).toBeNull()
+    expect(page.querySelector('[aria-label="Clear the activity log"]')).toBeNull()
   })
 })
