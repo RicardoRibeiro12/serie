@@ -97,12 +97,27 @@ const clampInt = (v, lo, hi) => {
   return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : undefined
 }
 
-// Search the catalogue in the app's language; the first results as buttons.
+// The muscle groups, in the order a trainer thinks of a body (lib/exercises.js `bp`).
+const GROUPS = ['chest', 'back', 'shoulders', 'upper arms', 'lower arms', 'upper legs', 'lower legs', 'waist', 'full body', 'cardio']
+const MAX_HITS = 12
+
+// Search the catalogue in the app's language, optionally inside one muscle group; the first
+// results as buttons. A group alone lists its exercises, so the trainer can browse without typing.
 function ExerciseFinder({ onPick }) {
   const [q, setQ] = useState('')
-  const hits = useMemo(() => (q.trim().length < 2 ? [] : searchExercises(CATALOGUE, q).slice(0, 8)), [q])
+  const [group, setGroup] = useState('')
+  const pool = useMemo(() => (group ? CATALOGUE.filter(ex => ex.bp === group) : CATALOGUE), [group])
+  const hits = useMemo(() => {
+    if (q.trim().length >= 2) return searchExercises(pool, q).slice(0, MAX_HITS)
+    return group ? pool.slice(0, MAX_HITS) : []
+  }, [q, pool, group])
   return <div className="tp-find">
-    <input className="input" type="search" aria-label={t('Add an exercise')} placeholder={t('Add an exercise: search by name or muscle')} value={q} onChange={e => setQ(e.target.value)} />
+    <div className="tp-groups" role="group" aria-label={t('Muscle group')}>
+      {GROUPS.map(g => <button key={g} type="button" className={'chip' + (group === g ? ' on' : '')} aria-pressed={group === g}
+        onClick={() => setGroup(x => (x === g ? '' : g))}><span className="capitalize">{t(g)}</span></button>)}
+    </div>
+    <input className="input" type="search" aria-label={t('Add an exercise')} placeholder={group ? t('Search in {0}', t(group)) : t('Add an exercise: search by name or muscle')} value={q} onChange={e => setQ(e.target.value)} />
+    {group && !q.trim() && <div className="small dim tp-hint">{t('The first {0} of {1}. Type to narrow it down.', Math.min(MAX_HITS, pool.length), pool.length)}</div>}
     {hits.length > 0 && <ul className="tp-hits">
       {hits.map(ex => <li key={ex.id}><button type="button" className="tp-hit" onClick={() => { onPick(ex.id); setQ('') }}>
         <Thumb ex={ex} /><span className="tp-hitname">{exerciseNameText(ex)}</span><span className="small dim capitalize">{ex.bp ? t(ex.bp) : ''}</span>

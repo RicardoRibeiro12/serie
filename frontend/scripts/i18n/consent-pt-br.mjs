@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url'
 const path = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'locales', 'pt-BR.js')
 const BR = {
   'Accepted on {0}.': 'Aceita em {0}.',
+  'Search in {0}': 'Buscar em {0}',
+  'The first {0} of {1}. Type to narrow it down.': 'Os primeiros {0} de {1}. Digite para filtrar.',
   'You own a gym. Hand it to someone else before deleting your account.': 'Você é dono de uma academia. Passe-a para outra pessoa antes de apagar a conta.',
   'Type your profile name exactly as it is.': 'Digite o nome do perfil exatamente como está.',
   'Assessments by your PT': 'Avaliações do seu personal',

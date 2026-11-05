@@ -1,5 +1,8 @@
 {
   "Add again": ["Adicionar outra vez", "Ajouter à nouveau"],
+  "Muscle group": ["Grupo muscular", "Groupe musculaire"],
+  "Search in {0}": ["Procurar em {0}", "Chercher dans {0}"],
+  "The first {0} of {1}. Type to narrow it down.": ["Os primeiros {0} de {1}. Escreve para filtrar.", "Les {0} premiers sur {1}. Tapez pour affiner."],
   "Add an exercise": ["Adicionar exercício", "Ajouter un exercice"],
   "Add an exercise: search by name or muscle": ["Adicionar exercício: procura por nome ou músculo", "Ajouter un exercice : chercher par nom ou muscle"],
   "Add at least one exercise.": ["Adiciona pelo menos um exercício.", "Ajoutez au moins un exercice."],

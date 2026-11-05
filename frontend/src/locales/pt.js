@@ -4103,4 +4103,7 @@ export default {
   "{0} has not allowed assessments yet. They can allow them in Settings, Privacy and health data.": "{0} ainda não autorizou avaliações. Pode autorizá-las em Definições, Privacidade e dados de saúde.",
   "You own a gym. Hand it to someone else before deleting your account.": "És dono de um ginásio. Passa-o a outra pessoa antes de apagares a conta.",
   "Type your profile name exactly as it is.": "Escreve o nome do perfil exatamente como está.",
+  "Muscle group": "Grupo muscular",
+  "Search in {0}": "Procurar em {0}",
+  "The first {0} of {1}. Type to narrow it down.": "Os primeiros {0} de {1}. Escreve para filtrar.",
 }

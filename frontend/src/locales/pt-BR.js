@@ -4,6 +4,9 @@
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "Muscle group": "Grupo muscular",
+  "Search in {0}": "Buscar em {0}",
+  "The first {0} of {1}. Type to narrow it down.": "Os primeiros {0} de {1}. Digite para filtrar.",
   "You own a gym. Hand it to someone else before deleting your account.": "Você é dono de uma academia. Passe-a para outra pessoa antes de apagar a conta.",
   "Type your profile name exactly as it is.": "Digite o nome do perfil exatamente como está.",
   "(optional)": "(opcional)",

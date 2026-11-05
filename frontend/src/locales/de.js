@@ -4123,4 +4123,7 @@ export default {
   "{0} has not allowed assessments yet. They can allow them in Settings, Privacy and health data.": "{0} has not allowed assessments yet. They can allow them in Settings, Privacy and health data.",
   "You own a gym. Hand it to someone else before deleting your account.": "You own a gym. Hand it to someone else before deleting your account.",
   "Type your profile name exactly as it is.": "Type your profile name exactly as it is.",
+  "Muscle group": "Muscle group",
+  "Search in {0}": "Search in {0}",
+  "The first {0} of {1}. Type to narrow it down.": "The first {0} of {1}. Type to narrow it down.",
 }

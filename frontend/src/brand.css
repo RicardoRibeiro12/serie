@@ -244,3 +244,10 @@ body { font-family: var(--font-display); }
 .dc-acts{gap:8px;flex-wrap:wrap;margin-top:6px}
 .dc-acts .btn{width:auto}
 .dc-foot{margin:14px 4px}
+
+/* Muscle-group filter in the trainer's plan editor */
+.tp-groups{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tp-groups::-webkit-scrollbar{display:none}
+.tp-groups .chip{flex:none;min-height:36px}
+.tp-hint{margin:6px 2px 0}
+@media (min-width:700px){.tp-groups{flex-wrap:wrap;overflow:visible}}
