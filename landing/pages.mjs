@@ -293,7 +293,8 @@ export const PAGES = [
     <h2>Cookies</h2>
     <p>Não usamos cookies de publicidade nem de estatísticas. A app guarda a tua sessão e os teus dados de treino no armazenamento local do browser, para funcionar também sem rede.</p>
     <h2>Responsável</h2>
-    <p>[NOME DO RESPONSÁVEL] · [E-MAIL DE CONTACTO]</p>
+    <p>Ricardo Ribeiro · <a href="mailto:rikaramas.2001@gmail.com">rikaramas.2001@gmail.com</a></p>
+    <p>Para pedir acesso, correção ou apagamento dos teus dados, ou para qualquer questão sobre privacidade, escreve para este e-mail.</p>
   </article>
 </div>`
   },
