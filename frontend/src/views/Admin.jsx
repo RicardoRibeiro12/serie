@@ -124,7 +124,8 @@ function UserDetail({ id, viewerOwner, onChanged, close }) {
   })
   // A recovery code (#584): any admin for a profile that is not an admin, the owner for an admin;
   // the owner's own comes from the server command (recover.js). Not for oneself.
-  const canRecover = !u.owner && !u.disabled && u.id !== me?.id && (!u.admin || viewerOwner)
+  // Recovery codes give a new passkey: not on Série's Supabase backend, which has none.
+  const canRecover = !u.owner && !u.disabled && u.id !== me?.id && (!u.admin || viewerOwner) && useStore.getState().config?.passkeys !== false
   const makeRecovery = () => confirmSheet({
     title: t('Recovery code for {0}?', u.name),
     message: t('For someone who lost every way in: their devices and passkey are gone, and they have no password. You get a one-time code to hand them; the device they enter it on gets a new passkey. They are signed out everywhere now. Their passkeys and password stay. It is shown once and is valid for 24 hours.'),

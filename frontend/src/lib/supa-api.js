@@ -237,13 +237,30 @@ const ROUTES = {
     const id = q(path, 'id')
     const p = ((await rpc('gym_people', { p_gym: g.id })) || []).find(x => x.id === id)
     if (!p) throw fail('no such profile', 404)
-    return { user: { id: p.id, name: p.name, admin: !!p.admin, owner: !!p.owner, trainer: !!p.trainer, trainerId: p.trainerId || null, lastSync: p.lastSync, credentials: [] }, workouts: [], bodyweight: [], trainers: [] }
+    // password: a boolean tells the screen this instance has passwords, which shows "Reset password".
+    return { user: { id: p.id, name: p.name, admin: !!p.admin, owner: !!p.owner, trainer: !!p.trainer, trainerId: p.trainerId || null, lastSync: p.lastSync, password: true, credentials: [] }, workouts: [], bodyweight: [], trainers: [] }
   },
   'POST /api/admin/user/trainer': async b => {
     const g = await ownGym()
     if (b.trainer !== undefined) await rpc('set_member_role', { p_gym: g.id, p_user: b.id, p_role: b.trainer ? 'trainer' : 'student' })
     if (b.trainerId !== undefined) await rpc('set_student_trainer', { p_gym: g.id, p_student: b.id, p_trainer: b.trainerId })
     return { ok: true, id: b.id }
+  },
+  // A one-time code the owner hands over (supabase/reset.sql); the person sets a new password with it.
+  'POST /api/admin/user/password-reset': async b => {
+    const r = await rpc('create_reset_code', { p_user: b.id })
+    return { ok: true, name: r.name, code: r.code, expires: Date.parse(r.expires) }
+  },
+  'POST /api/login/password-reset': async b => {
+    const who = b.identifier || b.name || b.email
+    const r = await fetch(URL_ + '/rest/v1/rpc/redeem_reset_code', {
+      method: 'POST', headers: { apikey: KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_email: emailFor(who), p_code: b.code, p_password: b.next })
+    })
+    const j = await r.json().catch(() => null)
+    if (!r.ok) throw /too-short/.test((j && j.message) || '') ? fail('too-short', 400, { error: 'too-short', code: 'too-short' }) : dbError(r.status, j)
+    if (j !== true) throw fail('wrong or expired reset code', 404, { error: 'wrong or expired reset code', code: 'reset-invalid' })
+    return { user: await signIn(who, b.next) }
   },
   'POST /api/admin/user/delete': async b => { const g = await ownGym(); await rpc('remove_member', { p_gym: g.id, p_user: b.id }); return ok },
   'GET /api/admin/invites': async () => {
