@@ -50,7 +50,7 @@ create index if not exists gyms_owner_idx on public.gyms (owner_id);
 create table if not exists public.memberships (
   gym_id      uuid not null references public.gyms (id) on delete cascade,
   user_id     uuid not null references public.profiles (id) on delete cascade,
-  role        text not null check (role in ('trainer', 'student')),
+  role        text not null check (role in ('trainer', 'student', 'desk')),   -- desk: the reception's account (app.sql)
   trainer_id  uuid references public.profiles (id) on delete set null,
   created_at  timestamptz not null default now(),
   primary key (gym_id, user_id),
@@ -88,7 +88,7 @@ create table if not exists public.usage_months (
 create table if not exists public.invites (
   code        text primary key,
   gym_id      uuid references public.gyms (id) on delete cascade,      -- null for an owner invite
-  role        text not null check (role in ('owner', 'trainer', 'student')),
+  role        text not null check (role in ('owner', 'trainer', 'student', 'desk')),
   gym_name    text check (gym_name is null or char_length(gym_name) between 1 and 80),
   trainer_id  uuid references public.profiles (id) on delete cascade,
   created_by  uuid not null references public.profiles (id) on delete cascade,
@@ -322,7 +322,7 @@ begin
     values (public.new_code(), null, 'owner', btrim(p_gym_name), auth.uid()) returning * into v_inv;
     return v_inv;
   end if;
-  if p_role not in ('trainer', 'student') or p_gym is null then raise exception 'bad invite' using errcode = '22023'; end if;
+  if p_role not in ('trainer', 'student', 'desk') or p_gym is null then raise exception 'bad invite' using errcode = '22023'; end if;
   if public.owns_gym(p_gym) then
     if v_trainer is not null and (p_role <> 'student' or not public.is_trainer_in(p_gym, v_trainer)) then
       raise exception 'that person is not a trainer in this gym' using errcode = '22023';

@@ -31,6 +31,15 @@ alter table public.assessments add column if not exists merged boolean not null 
 alter table public.profiles add column if not exists consent_terms_at timestamptz;
 alter table public.profiles add column if not exists consent_health_at timestamptz;
 alter table public.profiles add column if not exists consent_version text;
+
+-- Front desk accounts ('desk'): the account the reception's computer or tablet stays signed in
+-- with. It checks members in and out and sees how many are inside, nothing else: no members' list,
+-- no cards to issue, no training, no assessments (desk_scan, desk_status; every other function
+-- and policy asks for the owner, a trainer or the person). The owner can use the desk mode too.
+alter table public.memberships drop constraint if exists memberships_role_check;
+alter table public.memberships add constraint memberships_role_check check (role in ('trainer', 'student', 'desk'));
+alter table public.invites drop constraint if exists invites_role_check;
+alter table public.invites add constraint invites_role_check check (role in ('owner', 'trainer', 'student', 'desk'));
 alter table public.assessments drop constraint if exists assessments_check;
 alter table public.assessments add constraint assessments_check
   check (weight is not null or "values" <> '{}'::jsonb or body <> '{}'::jsonb);
@@ -75,6 +84,7 @@ language sql stable security definer set search_path = public as $$
     'admin', public.is_platform_admin() or exists (select 1 from gyms where owner_id = p.id),
     'owner', public.is_platform_admin(),
     'trainer', exists (select 1 from memberships where user_id = p.id and role = 'trainer'),
+    'desk', exists (select 1 from memberships where user_id = p.id and role = 'desk'),
     'consentTerms', p.consent_terms_at, 'consentHealth', p.consent_health_at, 'consentVersion', p.consent_version,
     'gyms', coalesce((select jsonb_agg(jsonb_build_object('id', g.id, 'name', g.name, 'role', 'owner') order by g.created_at)
                         from gyms g where g.owner_id = p.id), '[]'::jsonb)
@@ -349,13 +359,63 @@ begin
   return jsonb_build_object('ok', true, 'dir', p_dir, 'at', v_at, 'name', (select name from profiles where id = p_user), 'number', v_card.number);
 end $$;
 
+-- A front desk account of this gym (the caller, unless p_user names another).
+create or replace function public.is_desk_in(p_gym uuid, p_user uuid default auth.uid()) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from memberships where gym_id = p_gym and user_id = p_user and role = 'desk')
+$$;
+
+-- What the front desk screen shows besides each read: the gym's name and how many are inside.
+create or replace function public.desk_status(p_gym uuid) returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  perform public.require_uid();
+  if not (public.owns_gym(p_gym) or public.is_desk_in(p_gym)) then raise exception 'not your gym' using errcode = '42501'; end if;
+  perform public.close_stale_visits(p_gym);
+  return jsonb_build_object('gym', (select name from gyms where id = p_gym),
+    'present', (select count(*) from visits where gym_id = p_gym and out_at is null));
+end $$;
+
+-- Invites (supersedes schema.sql's): the owner may also invite a front desk account ('desk').
+--   owner of p_gym: 'trainer', 'student' (optionally for one of the gym's trainers) or 'desk'
+--   trainer in p_gym: 'student' for themselves
+--   platform admin: 'owner' with p_gym null and p_gym_name (the redeemer becomes its owner)
+create or replace function public.create_invite(p_role text, p_gym uuid default null,
+                                               p_trainer uuid default null, p_gym_name text default null)
+returns public.invites
+language plpgsql security definer set search_path = public as $$
+declare v_inv invites; v_trainer uuid := p_trainer;
+begin
+  perform public.require_uid();
+  if p_role = 'owner' then
+    if not public.is_platform_admin() then raise exception 'not allowed' using errcode = '42501'; end if;
+    if nullif(btrim(coalesce(p_gym_name, '')), '') is null then raise exception 'gym name required' using errcode = '22023'; end if;
+    insert into invites (code, gym_id, role, gym_name, created_by)
+    values (public.new_code(), null, 'owner', btrim(p_gym_name), auth.uid()) returning * into v_inv;
+    return v_inv;
+  end if;
+  if p_role not in ('trainer', 'student', 'desk') or p_gym is null then raise exception 'bad invite' using errcode = '22023'; end if;
+  if public.owns_gym(p_gym) then
+    if v_trainer is not null and (p_role <> 'student' or not public.is_trainer_in(p_gym, v_trainer)) then
+      raise exception 'that person is not a trainer in this gym' using errcode = '22023';
+    end if;
+  elsif public.is_trainer_in(p_gym) and p_role = 'student' then
+    v_trainer := auth.uid();
+  else
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+  insert into invites (code, gym_id, role, trainer_id, created_by)
+  values (public.new_code(), p_gym, p_role, v_trainer, auth.uid()) returning * into v_inv;
+  return v_inv;
+end $$;
+
 -- The desk: the QR text ("SERIE1:<code>") or the member number.
 create or replace function public.desk_scan(p_gym uuid, p_text text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare v_card member_cards; v_t text := btrim(coalesce(p_text, ''));
 begin
   perform public.require_uid();
-  if not public.owns_gym(p_gym) then raise exception 'not your gym' using errcode = '42501'; end if;
+  if not (public.owns_gym(p_gym) or public.is_desk_in(p_gym)) then raise exception 'not your gym' using errcode = '42501'; end if;
   if v_t like 'SERIE1:%' then select * into v_card from member_cards where gym_id = p_gym and code = substr(v_t, 8);
   else select * into v_card from member_cards where gym_id = p_gym and number = upper(v_t); end if;
   if not found then raise exception 'unknown card' using errcode = 'P0002'; end if;
@@ -373,7 +433,7 @@ begin
     select jsonb_build_object(
       'id', p.id, 'name', p.name,
       'admin', p.id = g.owner_id, 'owner', p.id = g.owner_id,
-      'trainer', coalesce(m.role = 'trainer', false), 'trainerId', m.trainer_id,
+      'trainer', coalesce(m.role = 'trainer', false), 'desk', coalesce(m.role = 'desk', false), 'trainerId', m.trainer_id,
       'workouts', coalesce(jsonb_array_length(case when jsonb_typeof(s.doc->'workouts') = 'array' then s.doc->'workouts' end), 0),
       'lastWorkout', (select max(w->>'d') from jsonb_array_elements(case when jsonb_typeof(s.doc->'workouts') = 'array' then s.doc->'workouts' else '[]'::jsonb end) w),
       'lastSync', s.updated_at,
@@ -416,6 +476,7 @@ revoke execute on all functions in schema public from public, anon;
 grant execute on function
   public.app_me(), public.app_join(text, text, text), public.put_state(jsonb, bigint, text),
   public.set_consent(boolean, boolean, text), public.delete_my_assessments(), public.delete_my_account(text),
+  public.is_desk_in(uuid, uuid), public.desk_status(uuid),
   public.coach_gym(uuid), public.trainer_students(), public.save_student_plan(uuid, uuid, text, jsonb),
   public.record_assessment(uuid, date, numeric, jsonb, jsonb, text), public.assessments_merged(uuid[]),
   public.issue_card(uuid, uuid), public.set_card_status(uuid, uuid, text), public.my_card(),

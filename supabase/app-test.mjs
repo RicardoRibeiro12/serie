@@ -19,7 +19,7 @@ await db.exec(`
 for (const f of ['schema.sql', 'schema.sql', 'app.sql', 'app.sql']) await db.exec(readFileSync(dir + '/' + f, 'utf8'))
 console.log('schema.sql + app.sql applied twice: OK')
 
-const ids = { owner: '11111111-1111-1111-1111-111111111111', pt: '22222222-2222-2222-2222-222222222222', aluno: '33333333-3333-3333-3333-333333333333', other: '44444444-4444-4444-4444-444444444444' }
+const ids = { owner: '11111111-1111-1111-1111-111111111111', pt: '22222222-2222-2222-2222-222222222222', aluno: '33333333-3333-3333-3333-333333333333', other: '44444444-4444-4444-4444-444444444444', desk: '55555555-5555-5555-5555-555555555555' }
 for (const id of Object.values(ids)) await db.query('insert into auth.users (id) values ($1)', [id])
 let fails = 0, n = 0
 const ok = (cond, label) => { n++; if (!cond) { fails++; console.log('FAIL', label) } }
@@ -106,6 +106,27 @@ ok(v.auto === true && v.out_at, 'yesterday\'s open visit closed at the end of th
 ok((await as('other', 'select count(*)::int c from visits'))[0].c === 0, 'stranger reads no visits')
 const people = (await as('owner', 'select public.gym_people($1) p', [gym]))[0].p
 ok(people.length === 3 && people.some(p => p.card && p.card.number === card.number), 'owner lists the gym people with cards')
+
+// front desk account: reads cards and the count inside, nothing else
+ok((await err('pt', "select public.create_invite('desk', $1)", [gym])) !== null, 'a trainer cannot invite a desk account')
+const deskInv = (await as('owner', "select (public.create_invite('desk', $1)).code c", [gym]))[0].c
+const deskMe = (await as('desk', 'select public.app_join($1, $2) j', ['Receção', deskInv]))[0].j
+ok(deskMe.desk === true && !deskMe.admin && !deskMe.trainer, 'the desk invite makes a desk account')
+const st0 = (await as('desk', 'select public.desk_status($1) s', [gym]))[0].s
+ok(st0.gym === 'Ginásio Central' && typeof st0.present === 'number', 'desk sees the gym name and the count inside')
+const ds = (await as('desk', 'select public.desk_scan($1, $2) s', [gym, card.number]))[0].s
+ok(ds.dir === 'in' && ds.name === 'Aluno Rui', 'desk checks a member in')
+ok((await as('desk', 'select public.desk_status($1) s', [gym]))[0].s.present === st0.present + 1, 'the count follows')
+await as('desk', 'select public.desk_scan($1, $2)', [gym, card.number])
+ok((await err('desk', 'select public.gym_people($1)', [gym])) !== null, 'desk cannot list the members')
+ok((await err('desk', 'select public.issue_card($1, $2)', [gym, ids.aluno])) !== null, 'desk cannot issue cards')
+ok((await as('desk', 'select count(*)::int c from visits'))[0].c === 0, 'desk reads no visit rows')
+ok((await as('desk', 'select count(*)::int c from member_cards'))[0].c === 0, 'desk reads no cards')
+ok((await as('desk', 'select count(*)::int c from assessments'))[0].c === 0, 'desk reads no assessments')
+ok((await as('desk', 'select count(*)::int c from user_state'))[0].c === 0, 'desk reads no training')
+ok((await err('other', 'select public.desk_status($1)', [gym])) !== null, 'a stranger has no desk status')
+ok((await as('owner', 'select public.desk_status($1) s', [gym]))[0].s.gym === 'Ginásio Central', 'the owner can use the desk too')
+
 await as('owner', "select public.set_card_status($1, $2, 'suspended')", [gym, ids.aluno])
 ok((await err('owner', 'select public.desk_scan($1, $2)', [gym, card.number])) !== null, 'suspended card refused')
 ok((await err('aluno', 'select public.gym_people($1)', [gym])) !== null, 'student cannot list the gym')
