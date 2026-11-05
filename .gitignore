@@ -6,8 +6,10 @@ media/gif/
 # Runtime data — users, passkeys, per-user state, session secret
 data/
 
-# Local config
+# Local config (frontend/.env.local holds the Supabase URL and public key for dev builds)
 .env
+.env.local
+*.env.local
 
 # Build output / deps
 frontend/dist/

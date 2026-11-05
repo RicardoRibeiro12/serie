@@ -239,9 +239,11 @@ writeFileSync(appIndex, html)
 // ---- headers: CSP from the inline scripts the build actually shipped
 const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).filter(s => s.trim())
 const hashes = inline.map(s => `'sha256-${createHash('sha256').update(s).digest('base64')}'`).join(' ')
+// Série on Supabase (frontend/src/lib/supa-api.js): the app talks to the project's own address.
+const supaOrigin = (() => { try { return new URL(process.env.VITE_SUPABASE_URL || '').origin } catch { return '' } })()
 const appCsp = [
   "default-src 'self'", `script-src 'self' ${hashes}`, "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:", "media-src 'self' blob:", "font-src 'self' data:", "connect-src 'self'",
+  "img-src 'self' data: blob:", "media-src 'self' blob:", "font-src 'self' data:", `connect-src 'self'${supaOrigin ? ' ' + supaOrigin : ''}`,
   "worker-src 'self'", "manifest-src 'self'", "frame-src https://www.youtube-nocookie.com", "object-src 'none'",
   "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'", 'upgrade-insecure-requests'
 ].join('; ')
