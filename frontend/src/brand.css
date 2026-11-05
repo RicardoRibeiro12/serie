@@ -230,3 +230,17 @@ body { font-family: var(--font-display); }
 .tp-exhead .thumb,.tp-hit .thumb{width:48px;height:48px;flex:none;border-radius:10px;object-fit:cover;background:var(--surface-2)}
 .tp-hit{align-items:center}
 .tp-hitname{flex:1;min-width:0}
+
+/* RGPD consent (components/Consent.jsx, views/DataConsent.jsx) */
+.consent{display:flex;flex-direction:column;gap:10px;margin:14px 0 4px;text-align:start}
+.consent-row{display:flex;gap:10px;align-items:flex-start;font-size:var(--fs-footnote);line-height:1.4;cursor:pointer}
+.consent-row input{width:20px;height:20px;flex:none;margin:1px 0 0;accent-color:var(--acc)}
+.consent-row a{color:var(--acc-ink)}
+.consent-gate{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:16px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(6px)}
+.consent-box{width:100%;max-width:460px;background:var(--surface);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:10px;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.consent-box h2{margin:0}
+.consent-box p{margin:0;font-size:var(--fs-footnote);line-height:1.45}
+.consent-err{color:var(--red)}
+.dc-acts{gap:8px;flex-wrap:wrap;margin-top:6px}
+.dc-acts .btn{width:auto}
+.dc-foot{margin:14px 4px}

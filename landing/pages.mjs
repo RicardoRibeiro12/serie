@@ -253,25 +253,45 @@ export const PAGES = [
   {
     path: '/privacidade/', lang: 'pt-PT', nav: 'priv', crumbs: [['Início', '/'], ['Privacidade', '/privacidade/']],
     title: 'Política de privacidade · Série',
-    description: 'Que dados a Série guarda, onde ficam, quem os vê e como os apagas.',
+    description: 'Que dados a Série guarda, porquê, onde ficam, quem os vê, o consentimento para dados de saúde e como os apagas.',
     body: `
 <div class="wrap">
   <article class="prose page">
     <h1>Política de privacidade</h1>
-    <p class="lead">Guardamos só o que a app precisa para funcionar e nada é vendido ou partilhado.</p>
+    <p class="lead">Guardamos o que a app precisa para funcionar. Nada é vendido nem usado para publicidade. Versão de novembro de 2026.</p>
     <h2>Que dados guardamos</h2>
     <ul>
-      <li>O nome do perfil e, se o adicionares, o e-mail.</li>
-      <li>O plano, os treinos, as pesagens e as medidas que registares.</li>
-      <li>As passkeys (só a parte pública) ou o hash da password. Nunca a password em si.</li>
-      <li>Um registo de atividade de segurança (inícios de sessão e tentativas falhadas), com o endereço IP encurtado.</li>
+      <li><strong>Conta:</strong> o nome do perfil e, se o adicionares, o e-mail. A palavra-passe é guardada só como hash pelo serviço de autenticação; nunca a vemos.</li>
+      <li><strong>Treino:</strong> o plano, os treinos, as pesagens e as medidas que registares.</li>
+      <li><strong>Ginásio:</strong> o ginásio a que pertences, o teu papel (aluno, PT ou dono), o teu PT, o cartão de sócio e as entradas e saídas lidas na receção.</li>
+      <li><strong>Avaliações (dados de saúde):</strong> só se autorizares, as avaliações que o teu PT regista: peso, composição corporal (gordura, massa muscular, água, gordura visceral), metabolismo e frequência cardíaca.</li>
+    </ul>
+    <h2>Porquê e com que fundamento</h2>
+    <ul>
+      <li>A conta, os treinos e o cartão são necessários para te prestar o serviço que pedes ao criar a conta.</li>
+      <li>As avaliações são dados de saúde, uma categoria especial do RGPD (artigo 9.º). Só são registadas com o teu <strong>consentimento explícito</strong>, dado à parte e que podes retirar a qualquer momento. Sem ele, a app não deixa o PT gravar nenhuma avaliação tua.</li>
     </ul>
     <h2>Quem os vê</h2>
-    <p>Tu. O teu personal trainer vê o teu nome, quantos treinos fizeste e a data do último. O administrador do serviço vê a lista de contas para gerir acessos.</p>
+    <ul>
+      <li><strong>Tu</strong> vês tudo o que é teu.</li>
+      <li><strong>O teu PT</strong> vê o teu progresso de treino, os planos que te escreveu e, se autorizaste, as tuas avaliações.</li>
+      <li><strong>O dono do teu ginásio</strong> vê a lista de sócios, os cartões e as entradas e saídas, e pode ver o treino e as avaliações dos sócios do seu ginásio, para acompanhar o trabalho dos PTs.</li>
+      <li>Outros ginásios <strong>não</strong> veem nada teu. Esta separação é imposta pelas regras da própria base de dados.</li>
+    </ul>
+    <h2>Onde ficam</h2>
+    <p>Numa base de dados do Supabase, numa região europeia. O site e a app são servidos pelo Netlify. Não partilhamos os teus dados com mais ninguém.</p>
+    <h2>Durante quanto tempo</h2>
+    <p>Enquanto a tua conta existir. Quando a apagas, os teus dados são apagados com ela.</p>
+    <h2>Os teus direitos</h2>
+    <ul>
+      <li><strong>Acesso e portabilidade:</strong> em Definições, Conta, podes exportar os teus dados.</li>
+      <li><strong>Retirar o consentimento e apagar as avaliações:</strong> em Definições, Conta, Privacidade e dados de saúde.</li>
+      <li><strong>Apagamento:</strong> em Definições, Conta, podes apagar a conta e tudo o que é teu. Um dono passa primeiro o ginásio a outra pessoa.</li>
+      <li><strong>Retificação:</strong> corriges os teus dados na própria app, ou pedes ao teu PT ou ao responsável.</li>
+      <li>Podes apresentar reclamação à Comissão Nacional de Proteção de Dados (CNPD).</li>
+    </ul>
     <h2>Cookies</h2>
-    <p>Um único cookie de sessão, necessário para manter a sessão iniciada. Não há cookies de publicidade nem de estatísticas.</p>
-    <h2>Apagar a conta</h2>
-    <p>Em Definições, Conta, podes exportar os teus dados e apagar a conta. Apagar remove o perfil, os treinos e as fotos de forma definitiva.</p>
+    <p>Não usamos cookies de publicidade nem de estatísticas. A app guarda a tua sessão e os teus dados de treino no armazenamento local do browser, para funcionar também sem rede.</p>
     <h2>Responsável</h2>
     <p>[NOME DO RESPONSÁVEL] · [E-MAIL DE CONTACTO]</p>
   </article>

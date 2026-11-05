@@ -15,6 +15,7 @@ import { dateLocale } from '../lib/i18n-core.js'
 import { api, webauthnOK, passkeyAssertion, passwordLogin, passwordRegister, passwordResetRedeem } from '../lib/api.js'
 import { askAddDeviceData } from '../sheets.jsx'
 import { Row, Button } from './ui.jsx'
+import { ConsentChecks } from './Consent.jsx'
 
 // The server's floor (api/password.js MIN_LENGTH), checked here first so the common mistake is
 // answered without a round trip. The server still decides.
@@ -155,8 +156,10 @@ export const openPasswordSignIn = onPasskey => ui().openSheet(close => <Password
 
 /* The password half of creating a profile. Name and invite code are the caller's state, so
    switching between passkey and password on the sign-up sheet keeps what was typed. */
-export function PasswordRegisterForm({ close, inviteOnly, codeField, name, setName, code, setCode }) {
+export function PasswordRegisterForm({ close, inviteOnly, codeField, consent, name, setName, code, setCode }) {
   const [email, setEmail] = useState('')
+  const [terms, setTerms] = useState(false)
+  const [health, setHealth] = useState(false)
   const [pw, setPw] = useState('')
   const [again, setAgain] = useState('')
   const [busy, setBusy] = useState(false)
@@ -171,11 +174,12 @@ export function PasswordRegisterForm({ close, inviteOnly, codeField, name, setNa
       : inviteOnly && !code.trim() ? t('An invite code is required')
       : length(pw) < MIN_PASSWORD ? t('Use at least {0} characters.', MIN_PASSWORD)
       : pw !== again ? t('The two passwords are not the same.')
+      : consent && !terms ? t('To use the app, accept the privacy policy.')
       : null
     if (bad) { setErr(bad); return }
     setBusy(true); setErr(null)
     try {
-      const u = await passwordRegister(n, pw, code.trim(), mail)
+      const u = await passwordRegister(n, pw, code.trim(), mail, ...(consent ? [{ terms, health }] : []))
       const st = useStore.getState()
       st.setUser(u); close()
       if (hasData(useStore.getState().S)) { await st.pushState(); toast(t('Profile created, and this device’s data moved into it')) }
@@ -203,6 +207,7 @@ export function PasswordRegisterForm({ close, inviteOnly, codeField, name, setNa
     <input className="input" type="password" name="new-password-again" autoComplete="new-password" placeholder={t('Repeat the password')}
       value={again} onChange={e => setAgain(e.target.value)} />
     <div className="dim small" style={{ marginTop: 6 }}>{t('At least {0} characters. A few unrelated words make a good one.', MIN_PASSWORD)}</div>
+    {consent && <ConsentChecks terms={terms} setTerms={setTerms} health={health} setHealth={setHealth} id="reg" />}
     {err && <div className="small" role="alert" style={errStyle}>{err}</div>}
     <div style={{ height: 12 }} />
     <Button type="submit" variant="primary" disabled={busy}>{t('Create profile')}</Button>

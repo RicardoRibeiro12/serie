@@ -42,6 +42,7 @@ import TabBar from './components/TabBar.jsx'
 import ScrollTopButton from './components/ScrollTopButton.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Modals from './components/Modals.jsx'
+import { ConsentGate } from './components/Consent.jsx'
 import Toast from './components/Toast.jsx'
 import SyncBanner from './components/SyncBanner.jsx'
 import RestTimer from './components/RestTimer.jsx'
@@ -79,7 +80,7 @@ const PAGE_TITLES = [
   ['/history', () => t('History')], ['/library', () => t('Exercises')], ['/muscles', () => t('Muscles')],
   ['/structural-balance', () => t('Structural balance')], ['/progress-photos', () => t('Progress photos')],
   ['/measurements', () => t('Body measurements')], ['/checkin', () => t('Check in')], ['/settings', () => t('Settings')],
-  ['/coach', () => t('Coach')], ['/admin', () => t('Admin dashboard')], ['/trainer', () => t('Students')], ['/card', () => t('Membership card')], ['/painel', () => t('Dashboard')]
+  ['/coach', () => t('Coach')], ['/admin', () => t('Admin dashboard')], ['/trainer', () => t('Students')], ['/card', () => t('Membership card')], ['/painel', () => t('Dashboard')], ['/data-consent', () => t('Privacy and health data')]
 ]
 const pageTitle = path => (PAGE_TITLES.find(([p]) => path === p || path.startsWith(p + '/'))?.[1] || (() => t('Home')))()
 const Admin = lazyView(() => import('./views/Admin.jsx'))
@@ -87,6 +88,7 @@ const Trainer = lazyView(() => import('./views/Trainer.jsx'))
 const TrainerStudent = lazyView(() => import('./views/TrainerStudent.jsx'))
 const MemberCard = lazyView(() => import('./views/MemberCard.jsx'))
 const Painel = lazyView(() => import('./views/Painel.jsx'))
+const DataConsent = lazyView(() => import('./views/DataConsent.jsx'))
 const CoachChat = lazyView(() => import('./views/CoachChat.jsx'))
 const Measurements = lazyView(() => import('./views/Measurements.jsx'))
 const CoachIntake = lazyView(() => import('./views/CoachIntake.jsx'))
@@ -375,6 +377,7 @@ function Shell() {
       <Route path="/trainer" element={user?.trainer ? <Trainer /> : <Navigate to="/home" replace />} />
       <Route path="/card" element={<MemberCard />} />
       <Route path="/painel" element={<Painel />} />
+      <Route path="/data-consent" element={<DataConsent />} />
       <Route path="/trainer/:id" element={user?.trainer ? <TrainerStudent /> : <Navigate to="/home" replace />} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
@@ -400,6 +403,8 @@ function Shell() {
       {!noTabs && authed && <ScrollTopButton off={loc.pathname === '/workout'} path={loc.pathname} />}
       <RestTimer />
       <Modals />
+      {/* RGPD: an account that has not accepted the privacy policy is asked before anything else. */}
+      {user && config?.consent && !user.consentTerms && <ConsentGate />}
       <Toast />
       <TimerFlash />
       {tour && authed && <Suspense fallback={null}><Tour /></Suspense>}

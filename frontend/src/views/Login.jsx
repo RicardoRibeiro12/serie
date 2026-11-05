@@ -49,7 +49,7 @@ function RegisterSheet({ close }) {
     <h3>{t('Create your profile')}</h3>
     {choose}
     <div className="muted small" style={{ marginBottom: 14 }}>{t('Pick a name and a password. You sign in with both.')}</div>
-    <PasswordRegisterForm close={close} inviteOnly={inviteOnly} codeField={!!config?.invite_field} name={name} setName={setName} code={code} setCode={setCode} />
+    <PasswordRegisterForm close={close} inviteOnly={inviteOnly} codeField={!!config?.invite_field} consent={!!config?.consent} name={name} setName={setName} code={code} setCode={setCode} />
   </>
   return <>
     <h3>{t('Create your profile')}</h3>

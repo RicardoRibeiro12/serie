@@ -1248,6 +1248,10 @@ export default function Settings({ page = null, find = null, via = null, entryKe
       </Section>}
       {/* Signed in or paired: the account can be deleted from here (App Store rule 5.1.1(v)). A
           phone in local-only mode has no account; "Reset everything" in Data & backup wipes it. */}
+      {/* Série on Supabase: the person's RGPD choices (views/DataConsent.jsx). */}
+      {user && !DEMO && config?.consent && <Section>
+        <Row icon="lock" iconTint="var(--teal)" title={t('Privacy and health data')} subtitle={user.consentHealth ? t('Your PT may record assessments.') : t('Your PT may not record assessments.')} accessory="chevron" onClick={() => nav('/data-consent')} />
+      </Section>}
       {user && !DEMO && <Section>
         <DeleteAccountRow exportBackup={doExport} exportBackupZip={doExportZip} hasMedia={hasMedia} done={() => nav('/home')} />
       </Section>}

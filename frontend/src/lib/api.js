@@ -431,8 +431,8 @@ export async function passwordLogin(name, password) {
 }
 // `email` is optional, and sent only when there is one: a server from before the field would
 // otherwise ignore it without a word, which is the same thing.
-export async function passwordRegister(name, password, code, email) {
-  return (await post('/api/register/password', { name, password, code: code || '', ...(email ? { email } : {}) })).user
+export async function passwordRegister(name, password, code, email, consent) {
+  return (await post('/api/register/password', { name, password, code: code || '', ...(email ? { email } : {}), ...(consent ? { consentTerms: !!consent.terms, consentHealth: !!consent.health } : {}) })).user
 }
 export async function passwordResetRedeem(name, code, next) {
   return (await post('/api/login/password-reset', { name, code, next })).user

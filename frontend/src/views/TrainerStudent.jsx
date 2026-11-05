@@ -46,8 +46,10 @@ export default function TrainerStudent() {
       {tab === 'assessments' && <div className="card">
         <div className="row between ts-bar">
           <div className="ttl">{t('Assessments')}</div>
-          <Button size="sm" variant="tinted" icon={checkin ? undefined : 'plus'} aria-expanded={checkin} onClick={() => setCheckin(c => !c)}>{checkin ? t('Cancel') : t('New assessment')}</Button>
+          {data.healthConsent !== false && <Button size="sm" variant="tinted" icon={checkin ? undefined : 'plus'} aria-expanded={checkin} onClick={() => setCheckin(c => !c)}>{checkin ? t('Cancel') : t('New assessment')}</Button>}
         </div>
+        {/* RGPD: assessments are health data, recorded only with the student's permission. */}
+        {data.healthConsent === false && <p className="small dim">{t('{0} has not allowed assessments yet. They can allow them in Settings, Privacy and health data.', data.name)}</p>}
         {checkin && <CheckInForm student={data} last={data.assessments[0]} done={() => { setCheckin(false); load() }} />}
         {!checkin && <AssessmentSheet list={data.assessments} />}
       </div>}
@@ -139,7 +141,7 @@ function CheckInForm({ student, last, done }) {
       await api('/api/trainer/assessment', { method: 'POST', body: JSON.stringify({ studentId: student.id, date, weight, values, body, note }) })
       toast(t('Check-in saved for {0}', student.name))
       done()
-    } catch (e) { toast(e.message) } finally { setBusy(false) }
+    } catch (e) { toast(e?.data?.code === 'no-health-consent' ? t('{0} has not allowed assessments yet. They can allow them in Settings, Privacy and health data.', student.name) : e.message) } finally { setBusy(false) }
   }
 
   const input = (k, label, unit) => <div className="tr-field" key={k}>

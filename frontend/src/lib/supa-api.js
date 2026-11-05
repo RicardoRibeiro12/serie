@@ -9,6 +9,7 @@
 // 404, and /api/config tells the app those features are off.
 import { progressOf } from '../../../api/trainer.js'
 import { visitReport } from '../../../api/members.js'
+import { t } from './i18n-core.js'
 
 const ENV = import.meta.env || {}
 const URL_ = String(ENV.VITE_SUPABASE_URL || '').replace(/\/$/, '')
@@ -89,7 +90,9 @@ const STATUS = { 28000: 401, 42501: 403, P0002: 404, 22023: 400, 23505: 409, 540
 function dbError(status, j) {
   const code = j && j.code
   const st = STATUS[code] || (status === 401 || status === 403 ? 401 : status)
-  return fail((j && (j.message || j.hint)) || 'HTTP ' + status, st, j || {})
+  const msg = (j && (j.message || j.hint)) || 'HTTP ' + status
+  // A code the screens can say in words: the student has not consented to health data (RGPD).
+  return fail(msg, st, { ...(j || {}), ...(/no health consent/.test(msg) ? { code: 'no-health-consent' } : {}) })
 }
 
 // ---- the person
@@ -107,7 +110,11 @@ const ownGym = async () => {
   if (!g) throw fail('forbidden', 403)
   return g
 }
-const userOf = m => ({ id: m.id, name: m.name, admin: !!m.admin, ...(m.owner ? { owner: true } : {}), ...(m.trainer ? { trainer: true } : {}) })
+// consentTerms / consentHealth: when the person accepted the privacy policy and, separately, gave the
+// health-data consent (RGPD art. 9); null when not. components/Consent.jsx asks for what is missing.
+const userOf = m => ({ id: m.id, name: m.name, admin: !!m.admin, ...(m.owner ? { owner: true } : {}), ...(m.trainer ? { trainer: true } : {}), consentTerms: m.consentTerms || null, consentHealth: m.consentHealth || null })
+// The privacy policy the consent refers to (landing/pages.mjs /privacidade/); bump it when the text changes.
+export const CONSENT_VERSION = '2026-11'
 const emailFor = name => {
   const n = String(name || '').trim()
   if (n.includes('@')) return n.toLowerCase()
@@ -127,7 +134,7 @@ async function signIn(name, password) {
   }
 }
 
-async function signUp({ name, password, code, email }) {
+async function signUp({ name, password, code, email, consentTerms, consentHealth }) {
   const n = String(name || '').trim().slice(0, 40)
   if (!n) throw fail('name required', 400)
   if (code) {
@@ -138,6 +145,7 @@ async function signUp({ name, password, code, email }) {
   if (!r.access_token) throw fail('the account was created but needs confirming; ask the gym to switch e-mail confirmation off', 400)
   writeSession(keep(r))
   meCache = await rpc('app_join', { p_name: n, p_code: code || null })
+  if (consentTerms) meCache = await rpc('set_consent', { p_terms: true, p_health: !!consentHealth, p_version: CONSENT_VERSION })
   return userOf(meCache)
 }
 
@@ -156,7 +164,31 @@ const ok = { ok: true }
 // ---- routes: 'METHOD /path' (no query) → (body, path) => answer
 const ROUTES = {
   'GET /api/health': () => ({ ok: true }),
-  'GET /api/config': () => ({ invite_only: false, allow_guest: false, password_login: true, passkeys: false, invite_field: true, backend: 'supabase' }),
+  'GET /api/config': () => ({ invite_only: false, allow_guest: false, password_login: true, passkeys: false, invite_field: true, consent: true, backend: 'supabase' }),
+  // The person's consent (components/Consent.jsx, views/DataConsent.jsx).
+  'POST /api/consent': async b => {
+    meCache = await rpc('set_consent', { p_terms: b.terms === true ? true : null, p_health: typeof b.health === 'boolean' ? b.health : null, p_version: CONSENT_VERSION })
+    return { user: userOf(meCache) }
+  },
+  'POST /api/assessments/delete-mine': async () => ({ ok: true, removed: await rpc('delete_my_assessments') }),
+  // Right to erasure: the account and everything of the person's (supabase/app.sql delete_my_account).
+  'GET /api/account/passkeys': () => ({ passkeys: [], password: true }),
+  'POST /api/account/delete': async b => {
+    // The current password proves it is the person (components/DeleteAccount.jsx ProveOwner).
+    const tk = await token()
+    const who = await fetch(URL_ + '/auth/v1/user', { headers: { apikey: KEY, Authorization: 'Bearer ' + tk } }).then(r => r.json()).catch(() => null)
+    if (!who || !who.email) throw fail('not signed in', 401)
+    try { await authCall('token?grant_type=password', { email: who.email, password: b.current || '' }) }
+    catch { throw fail('wrong current password', 400, { error: 'wrong current password', code: 'current-wrong' }) }
+    try { await rpc('delete_my_account', { p_name: b.name || '' }) }
+    catch (e) {
+      if (/owns a gym/.test(e.message)) throw fail(t('You own a gym. Hand it to someone else before deleting your account.'), 403)
+      if (/name does not match/.test(e.message)) throw fail(t('Type your profile name exactly as it is.'), 400)
+      throw e
+    }
+    writeSession(null); meCache = null
+    return { ok: true }
+  },
   'GET /api/me': async () => ({ user: userOf(await me(true)) }),
   'POST /api/login/password': async b => ({ user: await signIn(b.name, b.password) }),
   'POST /api/register/password': async b => ({ user: await signUp(b) }),
@@ -203,7 +235,7 @@ const ROUTES = {
     ])
     const names = await namesOf((assess || []).map(a => a.author_id))
     return {
-      id, name: s.name,
+      id, name: s.name, healthConsent: s.healthConsent !== false,
       progress: progressOf((state && state[0] && state[0].doc) || {}, records),
       assessments: (assess || []).map(assessmentOut(names)),
       plans: (plans || []).map(p => ({ id: p.id, name: p.name, at: p.created_at, updated: p.updated_at, mine: p.from_id === uid(), plan: p.plan }))
