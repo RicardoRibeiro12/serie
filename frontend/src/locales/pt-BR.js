@@ -4,6 +4,11 @@
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "Back to today": "Voltar a hoje",
+  "Next day": "Dia seguinte",
+  "No classes on this day.": "Não há aulas neste dia.",
+  "Previous day": "Dia anterior",
+  "Tomorrow": "Amanhã",
   "Add class": "Adicionar aula",
   "Book": "Reservar",
   "Booked a class and did not come": "Reservaram aula e não vieram",

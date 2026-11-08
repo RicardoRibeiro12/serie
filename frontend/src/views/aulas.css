@@ -28,3 +28,10 @@
 .au-grid label{display:block}
 .au-form-acts{justify-content:flex-end;gap:8px;margin-top:12px}
 @media (min-width:640px){.au-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+/* One day per page: arrows either side of the date, and the way back to today. */
+.au-pager{display:flex;align-items:center;gap:8px;margin-top:14px}
+.au-pager .iconbtn:disabled{opacity:.3}
+.au-pager-d{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center}
+.au-pager-d b{font-size:var(--fs-title3,20px)}
+.au-today{display:flex;justify-content:center;margin:8px 0 4px}
+.au-pager-d b::first-letter,.au-pager-d span::first-letter{text-transform:uppercase}

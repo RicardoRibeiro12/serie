@@ -4203,4 +4203,9 @@ export default {
   "{0} place left": "{0} place left",
   "{0} places left": "{0} places left",
   "{0} booked": "{0} booked",
+  "Back to today": "Back to today",
+  "Next day": "Next day",
+  "No classes on this day.": "No classes on this day.",
+  "Previous day": "Previous day",
+  "Tomorrow": "Tomorrow",
 }

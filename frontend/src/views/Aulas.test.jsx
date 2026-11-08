@@ -33,9 +33,12 @@ vi.mock('react-router-dom', () => ({ useNavigate: () => to => mocks.go.push(to),
 vi.mock('../sheets.jsx', () => ({ confirmSheet: o => { mocks.confirm(o); o.onConfirm() } }))
 
 const { default: Aulas } = await import('./Aulas.jsx')
+const { todayISO } = await import('../lib/format.js')
+const { addDaysISO } = await import('../lib/classes.js')
+const TODAY = todayISO()
 const { default: AulasHorario } = await import('./AulasHorario.jsx')
 
-const session = (extra = {}) => ({ id: 'c1', date: '2099-01-05', name: 'Spinning', room: 'Sala 1', starts: '18:30', minutes: 50, capacity: 2, trainer: 'PT Ana', booked: 1, mine: false, skipped: false, started: false, roster: null, ...extra })
+const session = (extra = {}) => ({ id: 'c1', date: TODAY, name: 'Spinning', room: 'Sala 1', starts: '18:30', minutes: 50, capacity: 2, trainer: 'PT Ana', booked: 1, mine: false, skipped: false, started: false, roster: null, ...extra })
 const mounted = []
 async function render(El = Aulas) {
   const host = document.createElement('div')
@@ -61,7 +64,7 @@ describe('classes', () => {
     expect(host.textContent).toContain('1 place left')
     expect(host.querySelector('.au-roster-btn')).toBe(null)
     await act(async () => { button(host, 'Book').click() })
-    expect(mocks.posts[0]).toEqual({ path: '/api/classes/book', body: { id: 'c1', date: '2099-01-05', on: true } })
+    expect(mocks.posts[0]).toEqual({ path: '/api/classes/book', body: { id: 'c1', date: TODAY, on: true } })
     expect(host.textContent).toContain('You’re in')
     expect(host.textContent).toContain('Full · 2/2')
     expect(button(host, 'Cancel')).toBeTruthy()
@@ -83,11 +86,33 @@ describe('classes', () => {
     await act(async () => { button(host, '1 booked').click() })
     expect(host.querySelector('.au-roster').textContent).toBe('Aluno Rui')
     await act(async () => { button(host, 'Call off').click() })
-    expect(mocks.posts.at(-1)).toEqual({ path: '/api/admin/classes/skip', body: { id: 'c1', date: '2099-01-05', skip: true } })
+    expect(mocks.posts.at(-1)).toEqual({ path: '/api/admin/classes/skip', body: { id: 'c1', date: TODAY, skip: true } })
     expect(host.textContent).toContain('Called off')
     expect(button(host, 'Put back on')).toBeTruthy()
     await act(async () => { button(host, 'Timetable').click() })
     expect(mocks.go).toContain('/aulas/horario')
+  })
+  it('one day per page: arrows, the date, and back to today', async () => {
+    const tomorrow = addDaysISO(TODAY, 1), later = addDaysISO(TODAY, 3)
+    mocks.answers['/api/classes'] = { gym: { id: 'g', name: 'G', owner: false }, sessions: [session(), session({ id: 'c2', name: 'Pilates', date: tomorrow }), session({ id: 'c3', name: 'Yoga', date: later })], mine: [] }
+    const host = await render()
+    const prev = host.querySelector('[aria-label="Previous day"]'), next = host.querySelector('[aria-label="Next day"]')
+    expect(host.querySelector('.au-pager-d b').textContent).toBe('Today')
+    expect(prev.disabled).toBe(true)
+    expect(button(host, 'Back to today').disabled).toBe(true)
+    expect(host.textContent).toContain('Spinning')
+    expect(host.textContent).not.toContain('Pilates')
+    await act(async () => { next.click() })
+    expect(host.querySelector('.au-pager-d b').textContent).toBe('Tomorrow')
+    expect(host.textContent).toContain('Pilates')
+    expect(host.textContent).not.toContain('Spinning')
+    await act(async () => { next.click() })
+    expect(host.textContent).toContain('No classes on this day.')
+    await act(async () => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' })) })
+    expect(host.textContent).toContain('Yoga')
+    await act(async () => { button(host, 'Back to today').click() })
+    expect(host.querySelector('.au-pager-d b').textContent).toBe('Today')
+    expect(host.textContent).toContain('Spinning')
   })
   it('an owner with no classes is pointed at the timetable', async () => {
     mocks.user = { id: 'o', admin: true }

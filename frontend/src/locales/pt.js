@@ -4192,4 +4192,9 @@ export default {
   "{0} place left": "{0} vaga livre",
   "{0} places left": "{0} vagas livres",
   "{0} booked": "{0} inscritos",
+  "Back to today": "Voltar a hoje",
+  "Next day": "Dia seguinte",
+  "No classes on this day.": "Não há aulas neste dia.",
+  "Previous day": "Dia anterior",
+  "Tomorrow": "Amanhã",
 }

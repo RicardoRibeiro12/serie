@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { endTime, byDay, sessionState, placesLeft, afterBooking, byWeekday, classProblem, isoWeekday } from './classes.js'
+import { endTime, byDay, sessionState, placesLeft, afterBooking, byWeekday, classProblem, isoWeekday, addDaysISO, dayList } from './classes.js'
 
 describe('group classes', () => {
   it('works out when a class ends', () => {
@@ -31,5 +31,13 @@ describe('group classes', () => {
     expect(classProblem({ ...ok, capacity: 0 })).toBe('Places: 1 to 500.')
     expect(isoWeekday('2026-11-08')).toBe(7)
     expect(isoWeekday('2026-11-09')).toBe(1)
+  })
+})
+
+describe('the day pages', () => {
+  it('counts days across a month end', () => {
+    expect(addDaysISO('2026-11-30', 1)).toBe('2026-12-01')
+    expect(addDaysISO('2026-11-01', -1)).toBe('2026-10-31')
+    expect(dayList('2026-11-08', 3)).toEqual(['2026-11-08', '2026-11-09', '2026-11-10'])
   })
 })

@@ -7,8 +7,14 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { api } from '../lib/api.js'
 import { t, tn } from '../lib/i18n.js'
+
+// How many days ahead the page goes, one page each.
+const DAYS = 14
+// "segunda-feira, 9 de novembro" in the app's language.
+const longDate = d => new Date(d + 'T12:00:00').toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
 import { fmtDate, todayISO } from '../lib/format.js'
-import { byDay, sessionState, placesLeft, afterBooking, endTime } from '../lib/classes.js'
+import { byDay, sessionState, placesLeft, afterBooking, endTime, dayList, addDaysISO } from '../lib/classes.js'
+import { dateLocale } from '../lib/i18n.js'
 import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
@@ -31,6 +37,14 @@ export default function Aulas() {
   const [err, setErr] = useState(null)
   const [busy, setBusy] = useState(null)
   const [open, setOpen] = useState(null)
+  // The day on screen: 0 is today, up to DAYS - 1.
+  const [idx, setIdx] = useState(0)
+  const go = n => { setIdx(i => Math.max(0, Math.min(DAYS - 1, i + n))); setOpen(null) }
+  useEffect(() => {
+    const onKey = e => { if (e.target.closest?.('input, textarea, select')) return; if (e.key === 'ArrowLeft') go(-1); else if (e.key === 'ArrowRight') go(1) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const load = useCallback(() => api('/api/classes?days=14').then(d => { setData(d); setErr(null) }).catch(e => setErr(e.message)), [])
   useEffect(() => { load() }, [load])
@@ -61,8 +75,12 @@ export default function Aulas() {
   })
 
   const owner = !!data?.gym?.owner
-  const days = byDay(data?.sessions)
   const today = todayISO()
+  const days = dayList(today, DAYS)
+  const day = days[idx]
+  const all = byDay(data?.sessions)
+  const sessions = (all.find(d => d.date === day) || { sessions: [] }).sessions
+  const title = day === today ? t('Today') : day === addDaysISO(today, 1) ? t('Tomorrow') : longDate(day)
 
   return <div className="narrow au">
     <div className="hdr">
@@ -74,14 +92,21 @@ export default function Aulas() {
     {err && <div className="card small" role="alert">{err}</div>}
     {!data && !err && <div className="small dim au-empty">…</div>}
     {data && !data.gym && <div className="card small dim">{t('You are not in a gym yet. Ask your gym for its code.')}</div>}
-    {data?.gym && !days.length && <div className="card au-empty">
+    {data?.gym && !all.length && <div className="card au-empty">
       <p className="small dim">{owner ? t('No classes on the timetable yet.') : t('No classes in the next two weeks.')}</p>
       {owner && <Button variant="primary" icon="plus" onClick={() => nav('/aulas/horario')}>{t('Set up the timetable')}</Button>}
     </div>}
 
-    {days.map(d => <section key={d.date} className="au-day" aria-label={fmtDate(d.date, true)}>
-      <h2 className="au-date">{d.date === today ? t('Today') : fmtDate(d.date, true)}</h2>
-      {d.sessions.map(s => {
+    {data?.gym && !!all.length && <>
+    <nav className="au-pager" aria-label={t('Day')}>
+      <button type="button" className="iconbtn" disabled={idx === 0} onClick={() => go(-1)} aria-label={t('Previous day')}><Icon name="chevronLeft" /></button>
+      <div className="au-pager-d" aria-live="polite"><b>{title}</b>{title !== longDate(day) && <span className="small dim">{longDate(day)}</span>}</div>
+      <button type="button" className="iconbtn" disabled={idx === DAYS - 1} onClick={() => go(1)} aria-label={t('Next day')}><Icon name="chevronRight" /></button>
+    </nav>
+    <div className="au-today"><Button size="sm" disabled={idx === 0} onClick={() => { setIdx(0); setOpen(null) }}>{t('Back to today')}</Button></div>
+    <section className="au-day" aria-label={longDate(day)}>
+      {!sessions.length && <div className="card au-empty small dim">{t('No classes on this day.')}</div>}
+      {sessions.map(s => {
         const st = sessionState(s)
         const sees = Array.isArray(s.roster)
         const k = key(s)
@@ -105,7 +130,8 @@ export default function Aulas() {
           </div>
         </article>
       })}
-    </section>)}
+    </section>
+    </>}
     {!!user && data?.gym && <p className="small dim au-foot">{t('You can cancel until the class starts. If you booked and cannot come, cancel so someone else gets the place.')}</p>}
   </div>
 }

@@ -66,3 +66,9 @@ export function isoWeekday(date) {
   const d = new Date(date + 'T12:00:00Z').getUTCDay()
   return d === 0 ? 7 : d
 }
+
+/** "YYYY-MM-DD" n days after a date (n may be negative). */
+export const addDaysISO = (date, n) => new Date(Date.parse(date + 'T12:00:00Z') + n * 86400000).toISOString().slice(0, 10)
+
+/** The days the classes page pages through: today and the n-1 after it. */
+export const dayList = (today, n = 14) => Array.from({ length: n }, (_, i) => addDaysISO(today, i))
