@@ -33,7 +33,7 @@ export default function DeskClasses({ onClose }) {
           <span className="rc-class-count" aria-label={t('{0} of {1} places taken', s.booked, s.capacity)}><b>{s.booked}</b>/{s.capacity}</span>
         </div>
         <div className="rc-class-name">{s.name}{s.skipped && <span className="rc-class-tag">{t('Called off')}</span>}{s.started && !s.skipped && <span className="rc-class-tag now">{t('On now')}</span>}</div>
-        <div className="rc-classes-dim">{[s.trainer, s.room].filter(Boolean).join(' · ')}</div>
+        <div className="rc-classes-dim">{[s.trainer && t('With {0}', s.trainer), s.room].filter(Boolean).join(' · ')}</div>
         {Array.isArray(s.roster) && (s.roster.length
           ? <ol className="rc-class-roster">{s.roster.map((n, i) => <li key={i}>{n}</li>)}</ol>
           : <div className="rc-classes-dim">{tn('{0} person booked', '{0} booked', 0)}</div>)}

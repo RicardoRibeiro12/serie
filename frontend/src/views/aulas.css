@@ -35,3 +35,5 @@
 .au-pager-d b{font-size:var(--fs-title3,20px)}
 .au-today{display:flex;justify-content:center;margin:8px 0 4px}
 .au-pager-d b::first-letter,.au-pager-d span::first-letter{text-transform:uppercase}
+.au-pt{display:flex;align-items:center;gap:6px;font-size:var(--fs-subhead,15px);font-weight:600;color:var(--acc-ink,var(--acc))}
+.au-pt svg{flex:none}

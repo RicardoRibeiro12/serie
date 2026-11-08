@@ -60,7 +60,8 @@ describe('classes', () => {
     mocks.answers['/api/classes/book'] = { booked: 2, mine: true }
     const host = await render()
     expect(host.textContent).toContain('Spinning')
-    expect(host.textContent).toContain('PT Ana · Sala 1')
+    expect(host.querySelector('.au-pt').textContent).toBe('With PT Ana')
+    expect(host.textContent).toContain('Sala 1')
     expect(host.textContent).toContain('1 place left')
     expect(host.querySelector('.au-roster-btn')).toBe(null)
     await act(async () => { button(host, 'Book').click() })

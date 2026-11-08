@@ -114,7 +114,8 @@ export default function Aulas() {
           <div className="au-time"><b>{s.starts}</b><span className="small dim">{endTime(s.starts, s.minutes)}</span></div>
           <div className="au-main">
             <div className="au-name">{s.name}{st === 'off' && <span className="au-pill off">{t('Called off')}</span>}{st === 'booked' && <span className="au-pill in">{t('You’re in')}</span>}</div>
-            <div className="small dim">{[s.trainer, s.room].filter(Boolean).join(' · ')}</div>
+            {s.trainer && <div className="au-pt"><Icon name="person" />{t('With {0}', s.trainer)}</div>}
+            {s.room && <div className="small dim">{s.room}</div>}
             <div className="small au-places">{st === 'off' ? '' : placesLeft(s) > 0
               ? tn('{0} place left', '{0} places left', placesLeft(s)) + ' · ' + s.booked + '/' + s.capacity
               : t('Full') + ' · ' + s.booked + '/' + s.capacity}</div>

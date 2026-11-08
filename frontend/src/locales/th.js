@@ -4214,4 +4214,6 @@ export default {
   "{0} of {1} places taken": "{0} of {1} places taken",
   "Showed up": "Showed up",
   "{0} person booked": "{0} person booked",
+  "With {0}": "With {0}",
+  "Next: {0} with {1}, {2}": "Next: {0} with {1}, {2}",
 }

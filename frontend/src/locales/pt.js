@@ -4203,4 +4203,6 @@ export default {
   "{0} of {1} places taken": "{0} de {1} vagas ocupadas",
   "Showed up": "Veio",
   "{0} person booked": "{0} inscrito",
+  "With {0}": "Com {0}",
+  "Next: {0} with {1}, {2}": "Próxima: {0} com {1}, {2}",
 }

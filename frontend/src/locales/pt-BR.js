@@ -4,6 +4,8 @@
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "With {0}": "Com {0}",
+  "Next: {0} with {1}, {2}": "Próxima: {0} com {1}, {2}",
   "{0} person booked": "{0} inscrito",
   "Showed up": "Veio",
   "No more classes today.": "Não há mais aulas hoje.",

@@ -33,7 +33,7 @@ it('lists today’s classes with the count, the PT and who booked', async () => 
   expect(items[0].textContent).toContain('18:30–19:20')
   expect(items[0].textContent).toContain('2/15')
   expect(items[0].textContent).toContain('On now')
-  expect(items[0].textContent).toContain('PT Ana · Estúdio 1')
+  expect(items[0].textContent).toContain('With PT Ana · Estúdio 1')
   expect([...items[0].querySelectorAll('.rc-class-roster li')].map(li => li.textContent)).toEqual(['Rui', 'Bia'])
   expect(items[1].textContent).toContain('Called off')
   await act(async () => { host.querySelector('[aria-label="Close"]').click() })
