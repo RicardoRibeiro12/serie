@@ -83,7 +83,7 @@ describe('classes', () => {
     mocks.answers['/api/classes'] = { gym: { id: 'g', name: 'G', owner: true }, sessions: [session({ roster: ['Aluno Rui'] })], mine: [] }
     mocks.answers['/api/admin/classes/skip'] = { ok: true }
     const host = await render()
-    await act(async () => { button(host, '1 booked').click() })
+    await act(async () => { button(host, '1 person booked').click() })
     expect(host.querySelector('.au-roster').textContent).toBe('Aluno Rui')
     await act(async () => { button(host, 'Call off').click() })
     expect(mocks.posts.at(-1)).toEqual({ path: '/api/admin/classes/skip', body: { id: 'c1', date: TODAY, skip: true } })

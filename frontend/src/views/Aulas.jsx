@@ -119,7 +119,7 @@ export default function Aulas() {
               ? tn('{0} place left', '{0} places left', placesLeft(s)) + ' · ' + s.booked + '/' + s.capacity
               : t('Full') + ' · ' + s.booked + '/' + s.capacity}</div>
             {sees && <button type="button" className="au-roster-btn small" aria-expanded={open === k} onClick={() => setOpen(o => (o === k ? null : k))}>
-              {tn('{0} booked', '{0} booked', s.roster.length)}<Icon name={open === k ? 'chevronUp' : 'chevronDown'} /></button>}
+              {tn('{0} person booked', '{0} booked', s.roster.length)}<Icon name={open === k ? 'chevronUp' : 'chevronDown'} /></button>}
             {sees && open === k && <ol className="au-roster small">{s.roster.length ? s.roster.map((n, i) => <li key={i}>{n}</li>) : <li className="dim">{t('Nobody yet.')}</li>}</ol>}
           </div>
           <div className="au-act">

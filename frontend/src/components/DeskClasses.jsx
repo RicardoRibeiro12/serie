@@ -36,7 +36,7 @@ export default function DeskClasses({ onClose }) {
         <div className="rc-classes-dim">{[s.trainer, s.room].filter(Boolean).join(' · ')}</div>
         {Array.isArray(s.roster) && (s.roster.length
           ? <ol className="rc-class-roster">{s.roster.map((n, i) => <li key={i}>{n}</li>)}</ol>
-          : <div className="rc-classes-dim">{tn('{0} booked', '{0} booked', 0)}</div>)}
+          : <div className="rc-classes-dim">{tn('{0} person booked', '{0} booked', 0)}</div>)}
       </li>)}
     </ol>
   </aside>

@@ -4201,4 +4201,6 @@ export default {
   "On now": "En cours",
   "Today’s classes": "Cours du jour",
   "{0} of {1} places taken": "{0} places prises sur {1}",
+  "Showed up": "Venu",
+  "{0} person booked": "{0} inscrit",
 }

@@ -4206,4 +4206,6 @@ export default {
   "On now": "On now",
   "Today’s classes": "Today’s classes",
   "{0} of {1} places taken": "{0} of {1} places taken",
+  "Showed up": "Showed up",
+  "{0} person booked": "{0} person booked",
 }

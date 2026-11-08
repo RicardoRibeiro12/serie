@@ -388,8 +388,8 @@ function Shell() {
       <Route path="/trainer" element={user?.trainer ? <Trainer /> : <Navigate to="/home" replace />} />
       <Route path="/card" element={<MemberCard />} />
       <Route path="/painel" element={<Painel />} />
-      {config?.classes && user && <Route path="/aulas" element={<Aulas />} />}
-      {config?.classes && user && <Route path="/aulas/horario" element={<AulasHorario />} />}
+      {user && <Route path="/aulas" element={<Aulas />} />}
+      {user && <Route path="/aulas/horario" element={<AulasHorario />} />}
       <Route path="/data-consent" element={<DataConsent />} />
       <Route path="/rececao" element={<Rececao />} />
       <Route path="/trainer/:id" element={user?.trainer ? <TrainerStudent /> : <Navigate to="/home" replace />} />

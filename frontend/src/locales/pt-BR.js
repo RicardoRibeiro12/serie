@@ -4,6 +4,8 @@
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "{0} person booked": "{0} inscrito",
+  "Showed up": "Veio",
   "No more classes today.": "Não há mais aulas hoje.",
   "On now": "Acontecendo agora",
   "Today’s classes": "Aulas de hoje",

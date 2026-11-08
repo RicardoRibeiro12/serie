@@ -162,7 +162,7 @@ export default function Painel() {
         <div className="pn-head"><h2>{t('Booked a class and did not come')}</h2><span className="pn-sub">{t('last {0} days, no entry at the front desk that day', 30)}</span>
           <button type="button" className="pn-btn pn-btn-ghost" onClick={() => nav('/aulas')}>{t('Classes')}</button></div>
         {noShows === null ? <p className="pn-dim">…</p> : noShows.length ? <table className="pn-table compact">
-          <thead><tr><th>{t('Member')}</th><th className="num">{t('Missed')}</th><th className="num">{t('Came')}</th><th>{t('Last missed')}</th><th>{t('Classes')}</th></tr></thead>
+          <thead><tr><th>{t('Member')}</th><th className="num">{t('Missed')}</th><th className="num">{t('Showed up')}</th><th>{t('Last missed')}</th><th>{t('Classes')}</th></tr></thead>
           <tbody>{noShows.map(p => <tr key={p.id}><td>{p.name}</td><td className="num">{p.misses}</td><td className="num">{p.kept}</td><td>{p.last ? dm(Date.parse(p.last + 'T12:00:00')) : ''}</td><td className="pn-dim">{(p.classes || []).join(', ')}</td></tr>)}</tbody>
         </table> : <p className="pn-dim">{t('Everyone who booked a class came.')}</p>}
       </section>}
