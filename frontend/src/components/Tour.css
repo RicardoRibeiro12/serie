@@ -65,3 +65,9 @@
 /* A short screen (320 x 568): the closing card's tutorials go to one line each, so its buttons
    stay in sight without scrolling the card. */
 @media (max-height:680px){.tour-tut-s{display:none}.tour-tut{padding:9px 12px}.tour-list{gap:5px}}
+
+/* Série welcome: what this account does here, one line each. */
+.tour-tips{list-style:none;margin:0 0 4px;padding:0;display:flex;flex-direction:column;gap:6px}
+.tour-tip{cursor:default;align-items:flex-start}
+.tour-tip svg{margin-top:2px;color:var(--acc-ink,var(--acc))}
+.tour-tip .tour-tut-s{color:var(--label);font-size:var(--fs-footnote)}

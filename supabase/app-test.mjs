@@ -90,13 +90,17 @@ ok((await err('owner', 'select public.issue_card($1, $2)', [gym, ids.other])) !=
 const card = (await as('owner', 'select public.issue_card($1, $2) c', [gym, ids.aluno]))[0].c
 ok(/^S-\d{6}$/.test(card.number), 'card number')
 const my = (await as('aluno', 'select public.my_card() c'))[0].c
-ok(my.card.gym === 'Ginásio Central' && my.card.qr.startsWith('SERIE1:') && my.inside === null, 'student sees the card with the gym name')
+ok(my.card.gym === 'Ginásio Central' && /^SERIE[0-9A-F]{24}$/.test(my.card.qr) && my.inside === null, 'student sees the card with the gym name')
 let s = (await as('owner', 'select public.desk_scan($1, $2) s', [gym, my.card.qr]))[0].s
 ok(s.dir === 'in' && s.name === 'Aluno Rui', 'desk scan checks in')
 s = (await as('owner', 'select public.desk_scan($1, $2) s', [gym, card.number]))[0].s
 ok(s.dir === 'out', 'typing the number checks out')
 ok((await err('pt', 'select public.desk_scan($1, $2)', [gym, card.number])) !== null, 'a trainer cannot use the desk')
 ok((await err('owner', "select public.desk_scan($1, 'SERIE1:nope')", [gym])) !== null, 'unknown QR refused')
+// the QR, letters and digits only; a QR from before still reads
+const legacy = (await as('owner', 'select public.desk_scan($1, $2) s', [gym, 'SERIE1:' + my.card.qr.slice(5)]))[0].s
+ok(legacy.name === 'Aluno Rui', 'an older SERIE1: QR still scans')
+await as('owner', 'select public.desk_scan($1, $2)', [gym, my.card.qr.toLowerCase()])
 await as('owner', 'select public.desk_scan($1, $2)', [gym, card.number])
 await db.exec("update visits set in_at = now() - interval '2 days' where out_at is null")
 await db.query('select public.close_stale_visits($1)', [gym])
@@ -130,6 +134,23 @@ ok((await as('owner', 'select public.desk_status($1) s', [gym]))[0].s.gym === 'G
 await as('owner', "select public.set_card_status($1, $2, 'suspended')", [gym, ids.aluno])
 ok((await err('owner', 'select public.desk_scan($1, $2)', [gym, card.number])) !== null, 'suspended card refused')
 ok((await err('aluno', 'select public.gym_people($1)', [gym])) !== null, 'student cannot list the gym')
+
+// exercises shared with the gym's PTs
+const ex = { id: 'cabc', n: 'Remada na máquina 3', bp: 'back', eq: 'machine', media: { id: 'big' } }
+ok((await as('pt', 'select public.share_exercise($1::jsonb, true) n', [JSON.stringify(ex)]))[0].n === 1, 'a PT shares an exercise with their gym')
+let gl = (await as('owner', 'select public.gym_exercise_list() l'))[0].l
+ok(gl.length === 1 && gl[0].ex.n === 'Remada na máquina 3' && gl[0].ex.custom === true && !gl[0].ex.media && gl[0].mine === false, 'the owner sees it, without the uploaded media')
+ok((await as('pt', 'select public.gym_exercise_list() l'))[0].l[0].mine === true, 'the PT sees it as theirs')
+ok((await as('aluno', 'select public.gym_exercise_list() l'))[0].l.length === 0, 'a student gets no list')
+ok((await as('aluno', 'select public.share_exercise($1::jsonb, true) n', [JSON.stringify({ id: 'cx', n: 'x' })]))[0].n === 0, 'a student shares nothing')
+ok((await as('other', 'select public.gym_exercise_list() l'))[0].l.length === 0, 'another gym sees nothing')
+ok((await err('pt', 'select public.share_exercise($1::jsonb, true)', [JSON.stringify({ id: 'cy', n: '' })])) !== null, 'an exercise needs a name')
+ok((await err('pt', 'select public.share_exercise($1::jsonb, true)', [JSON.stringify({ id: 'cz', n: 'z', desc: 'x'.repeat(30000) })])) !== null, 'and a sane size')
+ok((await err('owner', 'select count(*)::int c from gym_exercises')) !== null, 'the table is read only through the list')
+await as('pt', 'select public.share_exercise($1::jsonb, true)', [JSON.stringify({ ...ex, n: 'Remada máquina' })])
+ok((await as('owner', 'select public.gym_exercise_list() l'))[0].l[0].ex.n === 'Remada máquina', 'an edit updates the shared copy')
+ok((await as('owner', 'select public.share_exercise($1::jsonb, false) n', [JSON.stringify(ex)]))[0].n === 1, 'the owner can take it back')
+ok((await as('pt', 'select public.gym_exercise_list() l'))[0].l.length === 0, 'and it is gone for the PTs')
 
 // right to erasure: the person deletes their account; an owner cannot while they own a gym
 ok((await err('aluno', "select public.delete_my_account('someone else')")) !== null, 'delete needs the name typed back')

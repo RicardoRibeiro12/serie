@@ -25,7 +25,7 @@ import { useStore, DEF } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { beginWorkout } from '../sheets.jsx'
 import { openTour, closeTour, tourState, readTour, noteStep, SAMPLE_ROUTINE_ID, SAMPLE_WORKOUT_ID } from '../lib/tour.js'
-import Tour, { _setAnchorWait } from './Tour.jsx'
+import Tour, { _setAnchorWait, welcomeTips } from './Tour.jsx'
 
 const clone = o => JSON.parse(JSON.stringify(o))
 const ANCHORS = ['today', 'start', 'plan-mode', 'plan-views', 'plan-menu', 'lib-search', 'lib-filters', 'set', 'tick', 'swipe', 'workout-more', 'finish', 'stats-tiles',
@@ -123,22 +123,20 @@ describe('the first-run question', () => {
     expect(tourState()).toBe(null)
     expect(card()).toBe(null)
   })
-  it('also asks how much app this profile wants (Settings → Modules): Everything until a tap, a tap applies it', async () => {
-    useStore.setState(st => ({ S: { ...st.S, modules: undefined } }))
+  it('welcomes to Série with what this account does here, by role', async () => {
     await act(async () => { openTour({ kind: 'offer' }) })
     await render()
-    const radios = [...card().querySelectorAll('[role="radio"]')]
-    expect(radios.map(r => r.querySelector('.tour-tut-t').textContent)).toEqual(['Just training', 'Training and body', 'Everything'])
-    expect(radios.map(r => r.getAttribute('aria-checked'))).toEqual(['false', 'false', 'true'])
-    expect(card().textContent).toContain('Change it anytime in Settings → Modules.')
-    await click(radios[0])
-    expect(useStore.getState().S.modules.body).toBe(false)
-    expect(useStore.getState().S.modules.effort).toBe(true)
-    expect(card().querySelector('[data-preset="training"]').getAttribute('aria-checked')).toBe('true')
-    // the choice holds whichever way the card closes, and the tour question is still there
+    expect(card().querySelector('#tour-m').textContent).toBe('Welcome to Série')
+    expect(card().textContent).toContain('The orange button starts a workout')
+    expect(card().textContent).not.toContain('membership card')
+    expect(card().querySelector('[role="radiogroup"]')).toBe(null)
     await click(btn('Skip'))
-    expect(useStore.getState().S.modules.body).toBe(false)
-    useStore.setState(st => ({ S: { ...st.S, modules: undefined } }))
+    const tips = u => welcomeTips(u).map(x => x[1]).join(' | ')
+    expect(tips({ name: 'a' })).toContain('membership card')
+    expect(tips({ name: 'a' })).not.toContain('Students')
+    expect(tips({ trainer: true })).toContain('Students')
+    expect(tips({ admin: true })).toContain('Front desk mode')
+    expect(tips({ admin: true })).toContain('train here yourself')
   })
   it('the halfway card does not ask about modules again', async () => {
     noteStep('lib-search')

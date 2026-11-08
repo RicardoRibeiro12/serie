@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 
 vi.mock('./speech.js', () => ({ speak: vi.fn(() => Promise.resolve(true)), SPEECH_RATES: { slow: 0.8, normal: 1, fast: 1.25 }, speechRateOf: S => S?.speechRate || 'normal' }))
 const { speak } = await import('./speech.js')
-const { nextSetAfter, setCueText, restStartText, cues, bindCueState, cuesOn, sampleCue } = await import('./spoken-cues.js')
+const { nextSetAfter, nextExerciseAfter, setCueText, restStartText, cues, bindCueState, cuesOn, sampleCue } = await import('./spoken-cues.js')
 
 const BENCH = '0025', SQUAT = '0043'
 const set = (w, r, done = false, extra = {}) => ({ w, r, done, ...extra })
@@ -49,6 +49,16 @@ describe('the line for a set', () => {
   test('another exercise is named first', () => {
     const st = S([entry(BENCH, [set(80, 8, true)]), entry(SQUAT, [set(100, 5)])])
     expect(restStartText(st, 0)).toMatch(/^.+\. Set 1, 100 kilos, 5 reps$/)
+  })
+  test('the rest bar names the next exercise only when it is another one', () => {
+    const st = S([entry(BENCH, [set(80, 8, true), set(80, 8)]), entry(SQUAT, [set(100, 5)])])
+    expect(nextExerciseAfter(st, 0)).toBe(null)
+    st.active.entries[0].sets[1].done = true
+    const n = nextExerciseAfter(st, 0)
+    expect(n).toMatchObject({ idx: 1, i: 0, id: SQUAT, line: 'Set 1, 100 kilos, 5 reps' })
+    expect(n.name).toBeTruthy()
+    st.active.entries[1].sets[0].done = true
+    expect(nextExerciseAfter(st, 1)).toBe(null)
   })
   test('the Settings sample', () => {
     expect(sampleCue('kg')).toBe('Set 3, 80 kilos, 8 reps')

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
 import { REST_MAX } from '../lib/duration.js'
@@ -6,6 +6,26 @@ import { durationSheet } from './DurationWheel.jsx'
 import { Button } from './ui.jsx'
 import Icon from './Icon.jsx'
 import { SeasonDeco } from './Seasonal.jsx'
+import { Thumb } from './Media.jsx'
+import { useStore } from '../store/useStore.js'
+import { EXIDX } from '../lib/exercises.js'
+import { nextExerciseAfter } from '../lib/spoken-cues.js'
+import { exerciseNameText } from '../lib/format.js'
+
+// During a rest before another exercise's set: which one, so you can walk to its machine.
+function NextExercise({ next }) {
+  const ex = EXIDX[next.id]
+  return (
+    <div className="nextex" role="note">
+      {ex ? <Thumb ex={ex} /> : <div className="thumb thumb-x"><Icon name="dumbbell" /></div>}
+      <div className="nx-txt">
+        <span className="nx-k">{t('Next exercise')}</span>
+        <span className="nx-n">{ex ? exerciseNameText(ex) : next.name}</span>
+        {next.line && <span className="nx-l">{next.line}</span>}
+      </div>
+    </div>
+  )
+}
 
 const clock = sec => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0')
 
@@ -98,6 +118,9 @@ export default function RestTimer() {
   const countIn = useUI(s => s.countIn)
   const autoSay = useUI(s => s.autoSay)
   const { addRest, skipRest, pauseRest, resumeRest, finishWorkEarly, stopWork, goNow, stopAuto } = useUI()
+  const S = useStore(s => s.S)
+  const restFor = timer && !work && !countIn ? timer.forIdx : null
+  const nextAfter = useMemo(() => (restFor == null ? null : nextExerciseAfter(S, restFor)), [S, restFor])
   const on = countIn || work || timer
   const actsRef = useRef(null)
   const skipFits = useSkipFits(actsRef, [!!timer && !work, t('Skip'), t('Dismiss')])
@@ -160,8 +183,10 @@ export default function RestTimer() {
   // A rest before a hold that starts by itself says which one, and offers Stop auto under the
   // rest's own buttons (which keep their places: Pause, +15 s and Skip are the chain's for a rest).
   const autoNext = !timer.ready && timer.autoNext
+  // The next exercise, when the set after this rest is another one's (the bar grows a row for it).
+  const hasNext = !autoNext && timer.kind !== 'switch' && !!nextAfter
   return <>{say}
-    <div id="timer" data-tour="rest" className={'rest' + (timer.paused ? ' paused' : '') + (timer.kind === 'switch' ? ' switch' : '') + (timer.ready ? ' ready' : '') + (autoNext ? ' auto' : '')}>
+    <div id="timer" data-tour="rest" className={'rest' + (timer.paused ? ' paused' : '') + (timer.kind === 'switch' ? ' switch' : '') + (timer.ready ? ' ready' : '') + (autoNext ? ' auto' : '') + (hasNext ? ' has-next' : '')}>
       <div className="bar" aria-hidden="true"><i style={{ transform: `scaleX(${pct / 100})` }} /></div>
       <SeasonDeco spot="rest-timer" workout />
       <button type="button" className="tclock" onClick={adjustRestSheet}
@@ -186,6 +211,7 @@ export default function RestTimer() {
           <span className="skip-probe" aria-hidden="true"><span>{t('Skip')}</span><span>{t('Dismiss')}</span></span>
         </button>
       </div>
+      {hasNext && <NextExercise next={nextAfter} />}
       {autoNext && (
         <div className="autorow next">
           <span className="up">{t('Up next: {0}, starts by itself', autoNext)}</span>

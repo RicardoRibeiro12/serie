@@ -171,7 +171,10 @@ const ok = { ok: true }
 // ---- routes: 'METHOD /path' (no query) → (body, path) => answer
 const ROUTES = {
   'GET /api/health': () => ({ ok: true }),
-  'GET /api/config': () => ({ invite_only: false, allow_guest: false, password_login: true, passkeys: false, invite_field: true, consent: true, backend: 'supabase' }),
+  'GET /api/config': () => ({ invite_only: false, allow_guest: false, password_login: true, passkeys: false, invite_field: true, consent: true, shared_exercises: true, backend: 'supabase' }),
+  // Exercises shared with the gym's PTs (supabase/app.sql, lib/gym-exercises.js).
+  'GET /api/gym/exercises': async () => ({ exercises: (await rpc('gym_exercise_list')) || [] }),
+  'POST /api/gym/exercises/share': async b => ({ ok: true, gyms: await rpc('share_exercise', { p_ex: b.ex, p_on: b.on === true }) }),
   // The person's consent (components/Consent.jsx, views/DataConsent.jsx).
   'POST /api/consent': async b => {
     meCache = await rpc('set_consent', { p_terms: b.terms === true ? true : null, p_health: typeof b.health === 'boolean' ? b.health : null, p_version: CONSENT_VERSION })

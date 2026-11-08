@@ -34,6 +34,7 @@ import { REST_MAX, fmtRest, restWheelValue } from './lib/duration.js'
 import Icon from './components/Icon.jsx'
 import { SeasonDeco } from './components/Seasonal.jsx'
 import { useNfcSupported, nfcExerciseSheet } from './components/Nfc.jsx'
+import { useGymShared, canShareExercises, shareExercise } from './components/GymExerciseSync.jsx'
 import { Button, Slider, Switch, Segmented, SelectRow, Row, TextField, NumberField, MultiSelectRow } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
 import BodyMap from './components/BodyMap.jsx'
@@ -1518,6 +1519,11 @@ function CustomExForm({ existing, prefill, onDone, close }) {
   // does not know) reads as nothing here, and re-normalizing it on a rename would delete it on
   // every device.
   const [mediaTouched, setMediaTouched] = useState(false)
+  // Série: a PT's or the owner's own exercise can be shared with every PT in the gym (GymExerciseSync).
+  const canShare = useStore(s => canShareExercises(s.user, s.config)) && !existing?.gym
+  const wasShared = useGymShared(s => !!existing && s.mine.has(existing.id))
+  const [share, setShare] = useState(wasShared)
+  useEffect(() => { setShare(wasShared) }, [wasShared])
   const [url, setUrl] = useState(existing && typeof existing.url === 'string' ? existing.url : '')
   const onMedia = patch => {
     if ('media' in patch) { setMedia(patch.media); setMediaTouched(true) }
@@ -1589,6 +1595,10 @@ function CustomExForm({ existing, prefill, onDone, close }) {
     // The file goes to the server now rather than after the state's own debounce: another device
     // that sees the reference first shows a tile until it arrives.
     if (ref) syncMedia({ force: true })
+    if (canShare && (share || wasShared)) {
+      const saved = (S().customEx || []).find(c => c.id === id)
+      if (saved) shareExercise(saved, share).catch(e => toast(e.message))
+    }
     close()
     toast(existing ? t('Saved') : t('“{0}” created', name))
     onDone && onDone(EXIDX[id])
@@ -1623,6 +1633,11 @@ function CustomExForm({ existing, prefill, onDone, close }) {
     <textarea className="input" rows={4} maxLength={1000} placeholder={t('Description (optional): setup, cues, anything you want to remember')}
       value={desc} onChange={e => setDesc(e.target.value)} />
     <div data-tour="cx-media"><CustomMediaField media={media} url={url} onChange={onMedia} /></div>
+    {canShare && <div className="row cx-share">
+      <span className="grow"><span className="cx-share-t">{t('Available to every PT in the gym')}</span><span className="small dim">{t('They find it in their exercises and can put it in their students’ plans.')}</span></span>
+      <Switch checked={share} onChange={setShare} aria-label={t('Available to every PT in the gym')} />
+    </div>}
+    {existing?.gym && <div className="small dim cx-share">{existing.gymBy ? t('Shared in the gym by {0}', existing.gymBy) : t('Shared in the gym')}</div>}
     <div style={{ height: 14 }} />
     <Button variant="primary" data-tour="cx-save" onClick={save}>{existing ? t('Save') : t('Create exercise')}</Button>
     {existing && <><div style={{ height: 8 }} /><Button variant="danger" icon="trash" onClick={() => { close(); deleteCustomEx(existing) }}>{t('Delete exercise')}</Button></>}

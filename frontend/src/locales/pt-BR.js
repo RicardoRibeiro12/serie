@@ -4,6 +4,19 @@
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "Next exercise": "Próximo exercício",
+  "Plus weigh-ins, measurements and progress photos.": "Mais pesagens, medidas e fotos de progresso.",
+  "Welcome to Série": "Bem-vindo à Série",
+  "Front desk mode, the dashboard and Admin are on Home, under Your gym.": "O Modo recepção, o painel e a Administração estão no Início, em Sua academia.",
+  "Your students are in Settings (the gear on Home) → Students. Open one to build their plan.": "Seus alunos estão nas Configurações (a engrenagem no Início) → Alunos. Abra um para montar o plano dele.",
+  "Your membership card is on Home. Show its QR at the front desk on the way in and out.": "Seu cartão de sócio está no Início. Mostre o QR na recepção na entrada e na saída.",
+  "Plans from your PT show up on Home and in Plan.": "Os planos do seu personal aparecem no Início e no Plano.",
+  "The orange button starts a workout. While you rest, the bar shows the next exercise.": "O botão laranja começa o treino. Durante o descanso, a barra mostra o próximo exercício.",
+  "You can train here yourself too, like any member.": "Você também pode treinar aqui, como qualquer aluno.",
+  "Available to every PT in the gym": "Disponível para todos os personais da academia",
+  "They find it in their exercises and can put it in their students’ plans.": "Aparece nos exercícios deles, e eles podem colocá-lo nos planos dos alunos.",
+  "Shared in the gym by {0}": "Compartilhado na academia por {0}",
+  "Shared in the gym": "Compartilhado na academia",
   "Code for the front desk": "Código para recepção",
   "Entries, members and trainers": "Entradas, sócios e PTs",
   "Invites, cards and accounts": "Convites, cartões e contas",

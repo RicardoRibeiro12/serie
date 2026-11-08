@@ -44,7 +44,7 @@ import { integrationRoutes } from './integrations/routes.js';
 import { excusedOn, nudgeFor, nudgeWindowOpen, toneOf } from './nudge.js';
 import { verifyEdgeSignature, edgeClientIp } from './edge-proxy.js';
 import { isTrainer, studentsOf, offerFor, makeOffer, putOffer, dropOffer, forgetUser, makeAssessment, assessmentsFor, assessmentHistory, addAssessment, dropAssessments, plansFor, makeLibraryPlan, putLibraryPlan, dropLibraryPlan, progressOf } from './trainer.js';
-import { cardOf, cardByCode, issueCard, setCardStatus, checkInOut, openVisit, closeStale, visitReport, forgetMember, qrText, codeFromQr } from './members.js';
+import { cardOf, cardByCode, issueCard, newCardCode, setCardStatus, checkInOut, openVisit, closeStale, visitReport, forgetMember, qrText, codeFromQr } from './members.js';
 import { wrappedPushYear, wrappedSummary, wrappedPushOwed, wrappedPush } from './wrapped.js';
 
 const PORT = +(process.env.PORT || 3000);
@@ -168,6 +168,8 @@ db.planOffers = db.planOffers || [];   // plans a trainer sent, waiting for the 
 db.assessments = db.assessments || [];
 db.studentPlans = db.studentPlans || [];
 db.memberCards = db.memberCards || [];   // membership cards (members.js)
+// Cards from before the letters-and-digits QR get one (members.js qrText); the app shows the new QR.
+for (const c of db.memberCards) if (!/^[0-9A-F]{24}$/.test(c.code)) c.code = newCardCode();
 db.visits = db.visits || [];   // gym entries and exits (members.js)
 const GYM_NAME = (process.env.GYM_NAME || 'Ginásio Série').slice(0, 60);   // each student's plan library, written by their trainer (trainer.js)   // a trainer's check-in measurements, waiting for the student's app   // unused one-time device links, hashed (device-link.js)
 const isAdmin = user => !!user && (user.admin === true || ADMIN_UIDS.includes(user.id));
@@ -3186,7 +3188,7 @@ const routes = {
     const u = db.users.find(x => x.id === body.userId);
     if (!u) return json(res, 404, { error: 'no such profile' });
     let card;
-    if (body.action === 'issue') card = issueCard(db, { uid: u.id, code: crypto.randomBytes(18).toString('base64url') });
+    if (body.action === 'issue') card = issueCard(db, { uid: u.id, code: newCardCode() });
     else if (body.action === 'suspend' || body.action === 'activate') {
       const r = setCardStatus(db, u.id, body.action === 'suspend' ? 'suspended' : 'active');
       if (r.error) return json(res, 400, { error: r.error });

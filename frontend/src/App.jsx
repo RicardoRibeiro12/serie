@@ -46,6 +46,7 @@ import { ConsentGate } from './components/Consent.jsx'
 import Toast from './components/Toast.jsx'
 import SyncBanner from './components/SyncBanner.jsx'
 import RestTimer from './components/RestTimer.jsx'
+import GymExerciseSync from './components/GymExerciseSync.jsx'
 import TimerFlash from './components/TimerFlash.jsx'
 import { SeasonalLayer } from './components/Seasonal.jsx'
 import { WrappedLayer } from './components/WrappedEntry.jsx'
@@ -411,6 +412,7 @@ function Shell() {
       {!noTabs && <TabBar onStart={startFlow} />}
       {!noTabs && authed && <ScrollTopButton off={loc.pathname === '/workout'} path={loc.pathname} />}
       <RestTimer />
+      <GymExerciseSync />
       <Modals />
       {/* RGPD: an account that has not accepted the privacy policy is asked before anything else. */}
       {user && config?.consent && !user.consentTerms && <ConsentGate />}

@@ -1,0 +1,15 @@
+{
+  "Next exercise": ["Próximo exercício", "Exercice suivant"],
+  "Plus weigh-ins, measurements and progress photos.": ["Mais pesagens, medidas e fotos de progresso.", "Plus les pesées, les mensurations et les photos de progression."],
+  "Welcome to Série": ["Bem-vindo à Série", "Bienvenue sur Série"],
+  "Front desk mode, the dashboard and Admin are on Home, under Your gym.": ["O Modo receção, o painel e a Administração estão no Início, em O teu ginásio.", "Le mode accueil, le tableau de bord et l’administration sont sur l’accueil, sous Votre salle."],
+  "Your students are in Settings (the gear on Home) → Students. Open one to build their plan.": ["Os teus alunos estão nas Definições (a roda dentada no Início) → Alunos. Abre um para lhe montar o plano.", "Vos élèves sont dans Réglages (la roue dentée sur l’accueil) → Élèves. Ouvrez-en un pour créer son programme."],
+  "Your membership card is on Home. Show its QR at the front desk on the way in and out.": ["O teu cartão de sócio está no Início. Mostra o QR na receção à entrada e à saída.", "Votre carte de membre est sur l’accueil. Montrez son QR à l’accueil en entrant et en sortant."],
+  "Plans from your PT show up on Home and in Plan.": ["Os planos do teu PT aparecem no Início e no Plano.", "Les programmes de votre coach apparaissent sur l’accueil et dans Programme."],
+  "The orange button starts a workout. While you rest, the bar shows the next exercise.": ["O botão laranja começa o treino. Durante o descanso, a barra mostra o próximo exercício.", "Le bouton orange lance une séance. Pendant le repos, la barre affiche l’exercice suivant."],
+  "You can train here yourself too, like any member.": ["Também podes treinar aqui, como qualquer sócio.", "Vous pouvez aussi vous entraîner ici, comme n’importe quel membre."],
+  "Available to every PT in the gym": ["Disponível para todos os PTs do ginásio", "Disponible pour tous les coachs de la salle"],
+  "They find it in their exercises and can put it in their students’ plans.": ["Aparece nos exercícios deles e podem pô-lo nos planos dos alunos.", "Ils le trouvent dans leurs exercices et peuvent l’ajouter aux programmes de leurs élèves."],
+  "Shared in the gym by {0}": ["Partilhado no ginásio por {0}", "Partagé dans la salle par {0}"],
+  "Shared in the gym": ["Partilhado no ginásio", "Partagé dans la salle"]
+}

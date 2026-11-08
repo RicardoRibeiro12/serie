@@ -42,6 +42,15 @@ const BR = {
   'Personal trainers': 'Personal trainers',
   'Gym or trainer code (optional)': 'Código da academia ou do personal (opcional)',
   'If your gym or your trainer gave you a code, it puts you in their gym.': 'Se a academia ou o seu personal te deu um código, ele coloca você na academia.',
+  'Front desk mode, the dashboard and Admin are on Home, under Your gym.': 'O Modo recepção, o painel e a Administração estão no Início, em Sua academia.',
+  'Your students are in Settings (the gear on Home) → Students. Open one to build their plan.': 'Seus alunos estão nas Configurações (a engrenagem no Início) → Alunos. Abra um para montar o plano dele.',
+  'Your membership card is on Home. Show its QR at the front desk on the way in and out.': 'Seu cartão de sócio está no Início. Mostre o QR na recepção na entrada e na saída.',
+  'Plans from your PT show up on Home and in Plan.': 'Os planos do seu personal aparecem no Início e no Plano.',
+  'You can train here yourself too, like any member.': 'Você também pode treinar aqui, como qualquer aluno.',
+  'Available to every PT in the gym': 'Disponível para todos os personais da academia',
+  'They find it in their exercises and can put it in their students’ plans.': 'Aparece nos exercícios deles, e eles podem colocá-lo nos planos dos alunos.',
+  'Shared in the gym by {0}': 'Compartilhado na academia por {0}',
+  'Shared in the gym': 'Compartilhado na academia',
   'Show the QR at the front desk when you arrive and when you leave. If you forget on the way out, you are checked out at the end of the day.': 'Mostre o QR na recepção quando chegar e quando sair. Se esquecer na saída, ela fica registrada no fim do dia.'
 }
 const raw = readFileSync(path, 'utf8')

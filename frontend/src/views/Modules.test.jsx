@@ -5,7 +5,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { searchSettings, pageVisible, SEARCH } from './settings-pages.js'
-import { MODULES, isOn, presetOf } from '../lib/modules.js'
+import { MODULES, RETIRED, isOn, presetOf } from '../lib/modules.js'
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
@@ -141,7 +141,7 @@ describe('Settings follows the modules', () => {
   })
 
   it('every module is a hit of its own, on the Modules page', () => {
-    for (const m of MODULES) expect(SEARCH.some(e => e.page === 'modules' && e.title === m.title), m.id).toBe(true)
+    for (const m of MODULES.filter(m => !RETIRED.has(m.id))) expect(SEARCH.some(e => e.page === 'modules' && e.title === m.title), m.id).toBe(true)
     const hits = searchSettings('streak', off('motivation'))
     expect(hits.some(h => h.page === 'modules' && h.title === 'Motivation')).toBe(true)
     expect(searchSettings('modules', web)[0].page).toBe('modules')

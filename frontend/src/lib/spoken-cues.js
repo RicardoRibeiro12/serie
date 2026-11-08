@@ -100,6 +100,19 @@ export function restStartText(S, forIdx) {
   return setCueText(S, entry, next.i, { name })
 }
 
+/**
+ * For the rest bar: the exercise to walk over to when the set after this rest is another
+ * exercise's (the last set of one, or a superset's turn). `{ idx, i, id, name, line }`, or null
+ * when the next set is the same exercise's or the workout is done.
+ */
+export function nextExerciseAfter(S, forIdx) {
+  const next = nextSetAfter(S?.active, forIdx)
+  if (!next || next.idx === forIdx) return null
+  const entry = S.active.entries[next.idx]
+  const ex = EXIDX[entry.id]
+  return { idx: next.idx, i: next.i, id: entry.id, name: (ex ? exerciseNameFor(ex) : (entry.n || '')) || '', line: setCueText(S, entry, next.i) }
+}
+
 /* ------------------------------ the moments useUI calls ------------------------------ */
 
 let readStore = null

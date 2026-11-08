@@ -72,3 +72,13 @@ describe('modules', () => {
     expect(turnedOff({ modules: { body: false } }, { body: false, coach: false })).toEqual(['coach'])
   })
 })
+
+describe('Série', () => {
+  it('the published app has no watches, health apps or integrations', async () => {
+    const m = await import('./modules.js')
+    expect(m.SERIE_OFF).toEqual(['watch', 'health', 'integrations'])
+    // Under the test runner they stay on, so openGym's tests of those screens still run.
+    for (const id of m.SERIE_OFF) expect(m.RETIRED.has(id)).toBe(false)
+    expect(m.RETIRED.has('checkin')).toBe(true)
+  })
+})

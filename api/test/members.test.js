@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { issueCard, cardByCode, setCardStatus, checkInOut, visitReport, closeStale, qrText, codeFromQr, endOfDay } from '../members.js';
+import { issueCard, cardByCode, setCardStatus, checkInOut, visitReport, closeStale, qrText, codeFromQr, endOfDay, newCardCode } from '../members.js';
 
 const fresh = () => ({ users: [], memberCards: [], visits: [] });
 const T0 = Date.parse('2026-11-05T08:00:00Z');
@@ -15,6 +15,19 @@ test('a card gets a readable number and a QR code; reissuing changes only the co
   assert.equal(cardByCode(db, 'abc'), null);
   assert.equal(cardByCode(db, 'xyz').uid, 'u1');
   assert.equal(codeFromQr('some other code'), '');
+});
+
+test('the QR holds only letters and digits, and older QRs still read', () => {
+  const code = newCardCode();
+  assert.match(code, /^[0-9A-F]{24}$/);
+  assert.equal(qrText({ code }), 'SERIE' + code);
+  assert.match(qrText({ code }), /^[A-Z0-9]+$/, 'nothing a keyboard layout could change');
+  assert.equal(codeFromQr('SERIE' + code), code);
+  assert.equal(codeFromQr('serie' + code.toLowerCase()), code, 'Caps Lock on the reader does not matter');
+  assert.equal(codeFromQr('  SERIE' + code + '  '), code);
+  assert.equal(qrText({ code: 'ab+/x=' }), 'SERIE1:ab+/x=');
+  assert.equal(codeFromQr('SERIE1:ab+/x='), 'ab+/x=');
+  assert.equal(codeFromQr('SERIE123'), '');
 });
 
 test('check-in, no double entry, check-out; the desk toggles', () => {

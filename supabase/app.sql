@@ -288,6 +288,21 @@ language sql security definer set search_path = public as $$
      and (p_gym is null or gym_id = p_gym)
 $$;
 
+-- What a card's QR holds: "SERIE" and 24 hexadecimal letters and digits. Nothing a QR reader
+-- set to a US keyboard could type differently on a Portuguese one (":", "-", "+", "/", "=" can
+-- come out as other characters), and upper case so a reader with Caps Lock on reads the same.
+-- Cards from before keep working by their old "SERIE1:<code>" (desk_scan) until they get a new one.
+create or replace function public.new_card_code() returns text
+language sql volatile set search_path = public, extensions as $$
+  select upper(encode(extensions.gen_random_bytes(12), 'hex'))
+$$;
+create or replace function public.card_qr(p_code text) returns text
+language sql immutable as $$
+  select case when p_code ~ '^[0-9A-F]{24}$' then 'SERIE' || p_code else 'SERIE1:' || p_code end
+$$;
+-- Every card made before this gets a code of the new kind. The QR is shown by the app each time,
+-- never printed, so members simply see the new one.
+update public.member_cards set code = public.new_card_code() where code !~ '^[0-9A-F]{24}$';
 -- Issue (or reissue: new QR, the old one stops working) a card to a member of the owner's gym.
 create or replace function public.issue_card(p_gym uuid, p_user uuid) returns jsonb
 language plpgsql security definer set search_path = public, extensions as $$
@@ -300,8 +315,8 @@ begin
     raise exception 'not a member of this gym' using errcode = '22023';
   end if;
   insert into member_cards (gym_id, user_id, number, code)
-  values (p_gym, p_user, 'S-' || lpad(nextval('card_seq')::text, 6, '0'), encode(gen_random_bytes(18), 'base64'))
-  on conflict (gym_id, user_id) do update set code = encode(gen_random_bytes(18), 'base64')
+  values (p_gym, p_user, 'S-' || lpad(nextval('card_seq')::text, 6, '0'), public.new_card_code())
+  on conflict (gym_id, user_id) do update set code = public.new_card_code()
   returning * into v_card;
   return jsonb_build_object('number', v_card.number, 'status', v_card.status);
 end $$;
@@ -330,7 +345,7 @@ begin
   select * into v_gym from gyms where id = v_card.gym_id;
   select in_at into v_in from visits where gym_id = v_card.gym_id and user_id = auth.uid() and out_at is null;
   return jsonb_build_object('card', jsonb_build_object(
-      'number', v_card.number, 'qr', 'SERIE1:' || v_card.code, 'status', v_card.status, 'since', v_card.created_at,
+      'number', v_card.number, 'qr', public.card_qr(v_card.code), 'status', v_card.status, 'since', v_card.created_at,
       'name', (select name from profiles where id = auth.uid()), 'gym', v_gym.name,
       'role', coalesce((select role from memberships where gym_id = v_card.gym_id and user_id = auth.uid()), 'member')),
     'inside', v_in);
@@ -409,7 +424,7 @@ begin
   return v_inv;
 end $$;
 
--- The desk: the QR text ("SERIE1:<code>") or the member number.
+-- The desk: the QR text ("SERIE" + code, or the older "SERIE1:<code>") or the member number.
 create or replace function public.desk_scan(p_gym uuid, p_text text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare v_card member_cards; v_t text := btrim(coalesce(p_text, ''));
@@ -417,6 +432,7 @@ begin
   perform public.require_uid();
   if not (public.owns_gym(p_gym) or public.is_desk_in(p_gym)) then raise exception 'not your gym' using errcode = '42501'; end if;
   if v_t like 'SERIE1:%' then select * into v_card from member_cards where gym_id = p_gym and code = substr(v_t, 8);
+  elsif upper(v_t) ~ '^SERIE[0-9A-F]{24}$' then select * into v_card from member_cards where gym_id = p_gym and code = upper(substr(v_t, 6));
   else select * into v_card from member_cards where gym_id = p_gym and number = upper(v_t); end if;
   if not found then raise exception 'unknown card' using errcode = 'P0002'; end if;
   return public.visit_move(p_gym, v_card.user_id, 'toggle', true);
@@ -437,7 +453,7 @@ begin
       'workouts', coalesce(jsonb_array_length(case when jsonb_typeof(s.doc->'workouts') = 'array' then s.doc->'workouts' end), 0),
       'lastWorkout', (select max(w->>'d') from jsonb_array_elements(case when jsonb_typeof(s.doc->'workouts') = 'array' then s.doc->'workouts' else '[]'::jsonb end) w),
       'lastSync', s.updated_at,
-      'card', (select jsonb_build_object('number', c.number, 'status', c.status, 'created', c.created_at, 'qr', 'SERIE1:' || c.code)
+      'card', (select jsonb_build_object('number', c.number, 'status', c.status, 'created', c.created_at, 'qr', public.card_qr(c.code))
                  from member_cards c where c.gym_id = p_gym and c.user_id = p.id),
       'inside', (select v.in_at from visits v where v.gym_id = p_gym and v.user_id = p.id and v.out_at is null)) x
     from gyms g
@@ -466,7 +482,59 @@ drop policy if exists visits_select on public.visits;
 create policy visits_select on public.visits for select to authenticated
   using (user_id = auth.uid() or public.owns_gym(gym_id));
 
+-- Exercises a PT or the owner made and shared with the gym: every PT there (and the owner) gets a
+-- copy in their own library (frontend lib/gym-exercises.js). The definition only, no uploaded media.
+create table if not exists public.gym_exercises (
+  gym_id uuid not null references public.gyms(id) on delete cascade,
+  id text not null,
+  data jsonb not null,
+  shared_by uuid references public.profiles(id) on delete set null,
+  updated_at timestamptz not null default now(),
+  primary key (gym_id, id)
+);
+alter table public.gym_exercises enable row level security;
+
+-- The gyms where the caller coaches: as one of its trainers, or as its owner.
+create or replace function public.my_coach_gyms() returns setof uuid
+language sql stable security definer set search_path = public as $$
+  select gym_id from memberships where user_id = auth.uid() and role = 'trainer'
+  union select id from gyms where owner_id = auth.uid()
+$$;
+
+-- On: shares (or updates) the exercise in every gym where the caller coaches. Off: takes it back,
+-- for the one who shared it or the owner. The number of gyms it touched.
+create or replace function public.share_exercise(p_ex jsonb, p_on boolean) returns integer
+language plpgsql security definer set search_path = public as $$
+declare v_id text := p_ex->>'id'; v_n integer := 0;
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  if v_id is null or v_id = '' or length(v_id) > 80 or jsonb_typeof(p_ex) <> 'object' then raise exception 'bad exercise'; end if;
+  if coalesce(length(p_ex->>'n'), 0) = 0 or length(p_ex->>'n') > 80 then raise exception 'bad exercise'; end if;
+  if pg_column_size(p_ex) > 20000 then raise exception 'too big'; end if;
+  if p_on then
+    insert into gym_exercises (gym_id, id, data, shared_by)
+      select g, v_id, (p_ex - 'media') || jsonb_build_object('custom', true), auth.uid() from public.my_coach_gyms() g
+    on conflict (gym_id, id) do update set data = excluded.data, updated_at = now()
+      where gym_exercises.shared_by = auth.uid() or public.owns_gym(gym_exercises.gym_id);
+    get diagnostics v_n = row_count;
+  else
+    delete from gym_exercises e where e.id = v_id and e.gym_id in (select public.my_coach_gyms())
+      and (e.shared_by = auth.uid() or public.owns_gym(e.gym_id));
+    get diagnostics v_n = row_count;
+  end if;
+  return v_n;
+end $$;
+
+-- What the caller's gyms share: [{ ex, by, mine, at }], newest first.
+create or replace function public.gym_exercise_list() returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(jsonb_build_object('ex', e.data, 'by', p.name, 'mine', e.shared_by = auth.uid(), 'at', e.updated_at) order by e.updated_at desc), '[]'::jsonb)
+    from (select distinct on (id) * from gym_exercises where gym_id in (select public.my_coach_gyms()) order by id, updated_at desc) e
+    left join profiles p on p.id = e.shared_by
+$$;
+
 revoke all on public.student_plans, public.member_cards, public.visits from anon, authenticated;
+revoke all on public.gym_exercises from anon, authenticated;
 grant select, delete on public.student_plans to authenticated;
 grant select on public.member_cards, public.visits to authenticated;
 -- Students read their own assessments' body readings; nothing else changes on the table grants.
@@ -480,7 +548,8 @@ grant execute on function
   public.coach_gym(uuid), public.trainer_students(), public.save_student_plan(uuid, uuid, text, jsonb),
   public.record_assessment(uuid, date, numeric, jsonb, jsonb, text), public.assessments_merged(uuid[]),
   public.issue_card(uuid, uuid), public.set_card_status(uuid, uuid, text), public.my_card(),
-  public.desk_scan(uuid, text), public.gym_people(uuid)
+  public.desk_scan(uuid, text), public.gym_people(uuid),
+  public.my_coach_gyms(), public.share_exercise(jsonb, boolean), public.gym_exercise_list()
 to authenticated;
 -- schema.sql's own grants, restated because the revoke above covers every function.
 grant execute on function
@@ -494,3 +563,9 @@ grant execute on function
   public.can_coach(uuid), public.can_see_profile(uuid), public.is_platform_admin()
 to authenticated;
 grant execute on function public.check_invite(text) to anon;
+-- reset.sql's code is redeemed before signing in, so the revoke above must not take it away.
+do $$ begin
+  if to_regprocedure('public.redeem_reset_code(text, text, text)') is not null then
+    grant execute on function public.redeem_reset_code(text, text, text) to anon, authenticated;
+  end if;
+end $$;

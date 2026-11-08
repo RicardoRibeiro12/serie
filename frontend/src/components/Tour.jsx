@@ -26,8 +26,6 @@ import {
 import { beginWorkout } from '../sheets.jsx'
 import { Button } from './ui.jsx'
 import Icon from './Icon.jsx'
-import { PRESETS, presetOf, applyPreset } from '../lib/modules.js'
-import { presetCopy } from '../lib/modules-copy.js'
 import './Tour.css'
 
 // What each stop says. Literal t() calls, so check-source-strings sees every one.
@@ -278,6 +276,19 @@ function useCardKeys(cardRef, onEscape, trap = true) {
   }, [onEscape, trap])
 }
 
+// Série's first card: what this account does here, by role (a member, a PT, the gym's owner). The
+// openGym question about how much app (Settings → Modules) is left to Settings, everything on.
+export function welcomeTips(user) {
+  const tips = []
+  if (user?.admin) tips.push(['qr', t('Front desk mode, the dashboard and Admin are on Home, under Your gym.')])
+  if (user?.trainer) tips.push(['person', t('Your students are in Settings (the gear on Home) → Students. Open one to build their plan.')])
+  if (user) tips.push(['qr', t('Your membership card is on Home. Show its QR at the front desk on the way in and out.')])
+  tips.push(['clipboard', t('Plans from your PT show up on Home and in Plan.')])
+  tips.push(['play', t('The orange button starts a workout. While you rest, the bar shows the next exercise.')])
+  if (user?.admin || user?.trainer) tips.push(['dumbbell', t('You can train here yourself too, like any member.')])
+  return tips
+}
+
 /* "Want a 1-minute tour?" after the first setup, or "Finish the tour?" once after it was closed
    halfway. A small card in the middle; either answer is remembered.
    The first one also asks how much app this profile wants (Settings → Modules, lib/modules.js):
@@ -291,21 +302,15 @@ function Question({ kind, at }) {
   const no = () => { if (resume) markTourDone(); closeTour() }
   const yes = () => openTour({ kind: 'run', at: resume ? at : null })
   useCardKeys(cardRef, no)
-  const S = useStore(s => s.S)
-  const preset = presetOf(S)
-  const pick = id => { if (id !== preset) useStore.getState().update(s => applyPreset(s, id)) }
+  const user = useStore(s => s.user)
   return <div className="tour tour-ask">
     <div className="tour-block tour-dim" />
     <div className="tour-card tour-center" ref={cardRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="tour-t" aria-describedby="tour-b">
       {!resume && <>
-        <h2 id="tour-m">{t('How much app do you want?')}</h2>
-        <div className="tour-list tour-presets" role="radiogroup" aria-labelledby="tour-m">
-          {PRESETS.map(p => <button key={p.id} type="button" role="radio" aria-checked={preset === p.id} className="tour-tut tour-pick" data-preset={p.id} onClick={() => pick(p.id)}>
-            <span className="tour-tut-m"><span className="tour-tut-t">{presetCopy()[p.id][0]}</span><span className="tour-tut-s">{presetCopy()[p.id][1]}</span></span>
-            <Icon name="check" className="tour-pick-k" aria-hidden="true" />
-          </button>)}
-        </div>
-        <p className="tour-pick-f">{t('Change it anytime in Settings → Modules.')}</p>
+        <h2 id="tour-m">{t('Welcome to Série')}</h2>
+        <ul className="tour-list tour-tips" aria-labelledby="tour-m">
+          {welcomeTips(user).map(([icon, text]) => <li key={text} className="tour-tut tour-tip"><Icon name={icon} /><span className="tour-tut-s">{text}</span></li>)}
+        </ul>
       </>}
       <h2 id="tour-t" className={resume ? '' : 'tour-q2'}>{resume ? t('Finish the tour?') : t('Want a 1-minute tour?')}</h2>
       <p id="tour-b">{resume ? t('You stopped halfway. Want to see the rest?') : t('We’ll point at the good bits on the real screens. Bail out anytime.')}</p>

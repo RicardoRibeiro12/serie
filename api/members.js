@@ -15,10 +15,20 @@ export const STATUSES = ['active', 'suspended'];
 export const cardOf = (db, uid) => (db.memberCards || []).find(c => c.uid === uid) || null;
 export const cardByCode = (db, code) => (typeof code === 'string' && code ? (db.memberCards || []).find(c => c.code === code) : null) || null;
 
-// The QR's text: a prefix so the desk can tell our cards from any other code it is shown.
+// The QR's text: "SERIE" and 24 hexadecimal letters and digits, nothing a QR reader set to a US
+// keyboard could type differently on a Portuguese one, upper case so Caps Lock does not matter.
+// Cards from before ("SERIE1:<code>") still read until they get a new code. Same rule as
+// supabase/app.sql new_card_code / card_qr / desk_scan.
 export const QR_PREFIX = 'SERIE1:';
-export const qrText = card => QR_PREFIX + card.code;
-export const codeFromQr = text => (typeof text === 'string' && text.startsWith(QR_PREFIX) ? text.slice(QR_PREFIX.length).trim() : '');
+export const newCardCode = (bytes = () => crypto.getRandomValues(new Uint8Array(12))) => [...bytes()].map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+const HEX_CODE = /^[0-9A-F]{24}$/;
+export const qrText = card => (HEX_CODE.test(card.code) ? 'SERIE' + card.code : QR_PREFIX + card.code);
+export function codeFromQr(text) {
+  if (typeof text !== 'string') return '';
+  const t = text.trim();
+  if (t.startsWith(QR_PREFIX)) return t.slice(QR_PREFIX.length).trim();
+  return /^SERIE[0-9A-F]{24}$/i.test(t) ? t.slice(5).toUpperCase() : '';
+}
 
 export function issueCard(db, { uid, code, now = Date.now() }) {
   db.memberCards = db.memberCards || [];

@@ -60,7 +60,7 @@ export const GROUPS = [
 const TRAINING = ['effort', 'plates', 'watch']
 export const PRESETS = [
   { id: 'training', title: 'Just training', desc: 'Log, plan, progress. Nothing else on the screen.', on: TRAINING },
-  { id: 'body', title: 'Training and body', desc: 'Plus weigh-ins, measurements, photos and your health apps.', on: [...TRAINING, 'strength', 'body', 'health'] },
+  { id: 'body', title: 'Training and body', desc: 'Plus weigh-ins, measurements and progress photos.', on: [...TRAINING, 'strength', 'body', 'health'] },
   // Série: 'everything' leaves out the openGym gym check-in, which is off unless switched on (isOn).
   { id: 'all', title: 'Everything', desc: 'Streaks, the Coach, themes, the lot.', on: MODULE_IDS.filter(id => id !== 'checkin') },
 ]
@@ -71,7 +71,11 @@ const isMap = v => !!v && typeof v === 'object' && !Array.isArray(v)
 // Retired in Série: the openGym gym check-in (another gym's barcode, NFC stickers). The gym issues its
 // own card with a QR (views/MemberCard.jsx) that the front desk scans, so this module is off for every
 // profile, whatever it chose before, and the Modules page leaves it out.
-export const RETIRED = new Set(['checkin'])
+// Also retired in Série: the watches (Apple Watch, Wear OS, Zepp), the phone's health apps and the
+// integrations (webhooks, Hevy, MCP). The app leans on openGym's own exercise media and charts instead.
+// Left on under the test runner, so openGym's own tests of those screens keep checking them.
+export const SERIE_OFF = ['watch', 'health', 'integrations']
+export const RETIRED = new Set(['checkin', ...(import.meta.env?.MODE === 'test' ? [] : SERIE_OFF)])
 
 /** Whether module `id` is on for this profile. Unknown ids are on (a newer client's module). */
 export function isOn(S, id) {
@@ -95,7 +99,7 @@ export function presetModules(presetId) {
   const p = PRESET[presetId]
   if (!p) return null
   const on = new Set(p.on)
-  return Object.fromEntries(MODULE_IDS.map(id => [id, on.has(id)]))
+  return Object.fromEntries(MODULE_IDS.map(id => [id, on.has(id) && !RETIRED.has(id)]))
 }
 
 /** 'training' | 'body' | 'all' when the modules match a preset exactly, else 'custom'. */

@@ -55,6 +55,9 @@ export const ROOT_GROUPS = [['modules'], ['workout', 'alerts', 'reminders'], ['p
 export function pageVisible(page, ctx) {
   // A page of a module that is off (ctx.mod answers isOn for this profile; absent: all on).
   if (PAGES[page]?.mod && ctx.mod && !ctx.mod(PAGES[page].mod)) return false
+  // Série: no watches and no integrations (lib/modules.js RETIRED).
+  if (RETIRED.has('watch') && (page === 'watch' || page === 'zepp')) return false
+  if (RETIRED.has('integrations') && (page === 'integrations' || PAGES[page]?.parent === 'integrations')) return false
   if (page === 'reminders') return !!(ctx.user || ctx.mobile)
   if (page === 'coach') return !!ctx.mobile
   // The iPhone app only: the watch app ships inside it.

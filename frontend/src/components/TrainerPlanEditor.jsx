@@ -8,7 +8,8 @@ import { useUI } from '../store/useUI.js'
 import { api } from '../lib/api.js'
 import { t } from '../lib/i18n.js'
 import { uid, todayISO, exerciseNameText } from '../lib/format.js'
-import { CATALOGUE, EXIDX, searchExercises } from '../lib/exercises.js'
+import { allExercises, EXIDX, searchExercises } from '../lib/exercises.js'
+import { planCustomEx } from '../lib/gym-exercises.js'
 import { Button } from './ui.jsx'
 import { Thumb } from './Media.jsx'
 
@@ -36,7 +37,7 @@ export default function TrainerPlanEditor({ student, initial, done }) {
     const clean = routines.map(r => ({ ...r, name: r.name.trim() || t('Workout'), ex: r.ex.filter(e => EXIDX[e.id]) })).filter(r => r.ex.length)
     if (!clean.length) return toast(t('Add at least one exercise.'))
     if (!name.trim()) return toast(t('Give the plan a name.'))
-    const plan = { opengym_plan: 1, exported: todayISO(), name: name.trim(), unit: 'kg', week: {}, routines: clean, customEx: [] }
+    const plan = { opengym_plan: 1, exported: todayISO(), name: name.trim(), unit: 'kg', week: {}, routines: clean, customEx: planCustomEx(clean, useStore.getState().S.customEx) }
     setBusy(true)
     try {
       await api('/api/trainer/plans', { method: 'POST', body: JSON.stringify({ studentId: student.id, id: initial?.id, name: name.trim(), plan }) })
@@ -101,12 +102,15 @@ const clampInt = (v, lo, hi) => {
 const GROUPS = ['chest', 'back', 'shoulders', 'upper arms', 'lower arms', 'upper legs', 'lower legs', 'waist', 'full body', 'cardio']
 const MAX_HITS = 12
 
-// Search the catalogue in the app's language, optionally inside one muscle group; the first
+// Search the catalogue and the trainer's own exercises (the gym's shared ones among them) in the app's language, optionally inside one muscle group; the first
 // results as buttons. A group alone lists its exercises, so the trainer can browse without typing.
 function ExerciseFinder({ onPick }) {
   const [q, setQ] = useState('')
   const [group, setGroup] = useState('')
-  const pool = useMemo(() => (group ? CATALOGUE.filter(ex => ex.bp === group) : CATALOGUE), [group])
+  const custom = useStore(s => s.S.customEx)
+  const merged = useStore(s => s.S.exMerged)
+  const all = useMemo(() => allExercises({ customEx: custom, exMerged: merged }), [custom, merged])
+  const pool = useMemo(() => (group ? all.filter(ex => ex.bp === group) : all), [group, all])
   const hits = useMemo(() => {
     if (q.trim().length >= 2) return searchExercises(pool, q).slice(0, MAX_HITS)
     return group ? pool.slice(0, MAX_HITS) : []
