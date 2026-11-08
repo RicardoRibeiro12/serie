@@ -4205,4 +4205,11 @@ export default {
   "{0} person booked": "{0} inscrit",
   "With {0}": "Avec {0}",
   "Next: {0} with {1}, {2}": "Prochain : {0} avec {1}, {2}",
+  "My classes": "Mes cours",
+  "My classes ({0})": "Mes cours ({0})",
+  "See the timetable": "Voir le planning",
+  "You have no classes booked.": "Vous n’avez réservé aucun cours.",
+  "{0} booked class": "{0} réservé",
+  "{0} booked classes": "{0} réservés",
+  "All classes": "Tous les cours",
 }

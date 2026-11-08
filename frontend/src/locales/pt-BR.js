@@ -4,6 +4,13 @@
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  "All classes": "Todas as aulas",
+  "My classes": "Minhas aulas",
+  "My classes ({0})": "Minhas aulas ({0})",
+  "See the timetable": "Ver o horário",
+  "You have no classes booked.": "Você ainda não tem aulas marcadas.",
+  "{0} booked class": "{0} marcada",
+  "{0} booked classes": "{0} marcadas",
   "With {0}": "Com {0}",
   "Next: {0} with {1}, {2}": "Próxima: {0} com {1}, {2}",
   "{0} person booked": "{0} inscrito",

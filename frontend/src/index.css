@@ -3284,3 +3284,4 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
 .cx-share{gap:12px;align-items:center;margin-top:14px;padding:10px 12px;border-radius:12px;background:var(--surface-2)}
 .cx-share .grow{display:flex;flex-direction:column;gap:2px;min-width:0}
 .cx-share-t{font-weight:600}
+.cl-count{margin-inline-start:8px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--acc-soft);color:var(--acc-ink,var(--acc));vertical-align:middle}

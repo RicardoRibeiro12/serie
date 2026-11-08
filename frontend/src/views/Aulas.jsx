@@ -2,7 +2,7 @@
 // cancel until the class starts. The class's PT and the gym's owner also see who booked; the owner
 // can call one session off (a holiday) and opens the weekly timetable from here.
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { api } from '../lib/api.js'
@@ -17,7 +17,7 @@ import { byDay, sessionState, placesLeft, afterBooking, endTime, dayList, addDay
 import { dateLocale } from '../lib/i18n.js'
 import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
-import { Button } from '../components/ui.jsx'
+import { Button, Segmented } from '../components/ui.jsx'
 import './aulas.css'
 
 // The server's refusals, said in words.
@@ -37,6 +37,9 @@ export default function Aulas() {
   const [err, setErr] = useState(null)
   const [busy, setBusy] = useState(null)
   const [open, setOpen] = useState(null)
+  // 'day': the timetable a day at a time; 'mine': every class this person booked (Home opens it).
+  const loc = useLocation()
+  const [view, setView] = useState(loc.state?.mine ? 'mine' : 'day')
   // The day on screen: 0 is today, up to DAYS - 1.
   const [idx, setIdx] = useState(0)
   const go = n => { setIdx(i => Math.max(0, Math.min(DAYS - 1, i + n))); setOpen(null) }
@@ -56,6 +59,7 @@ export default function Aulas() {
     try {
       const r = await api('/api/classes/book', { method: 'POST', body: JSON.stringify({ id: s.id, date: s.date, on }) })
       patch(s, afterBooking(s, r, on))
+      load()   // the list of my classes follows
       toast(on ? t('Booked: {0}, {1} at {2}', s.name, fmtDate(s.date, true), s.starts) : t('Booking cancelled'))
     } catch (e) { toast(bookingError(e)); load() } finally { setBusy(null) }
   }
@@ -64,6 +68,14 @@ export default function Aulas() {
     message: t('{0}, {1} at {2}. Your place goes to someone else.', s.name, fmtDate(s.date, true), s.starts),
     confirmText: t('Cancel booking'), danger: true,
     onConfirm: () => book(s, false)
+  })
+  // Cancelling from My classes: the item has no place count, so the page reloads instead of patching.
+  const cancelMine = c => confirmSheet({
+    title: t('Cancel your place?'),
+    message: t('{0}, {1} at {2}. Your place goes to someone else.', c.name, fmtDate(c.date, true), c.starts),
+    confirmText: t('Cancel booking'), danger: true,
+    onConfirm: () => api('/api/classes/book', { method: 'POST', body: JSON.stringify({ id: c.id, date: c.date, on: false }) })
+      .then(() => { toast(t('Booking cancelled')); load() }).catch(e => { toast(bookingError(e)); load() })
   })
   const skip = (s, on) => confirmSheet({
     title: on ? t('Call off this class?') : t('Put this class back on?'),
@@ -81,6 +93,9 @@ export default function Aulas() {
   const all = byDay(data?.sessions)
   const sessions = (all.find(d => d.date === day) || { sessions: [] }).sessions
   const title = day === today ? t('Today') : day === addDaysISO(today, 1) ? t('Tomorrow') : longDate(day)
+  const dayName = d => (d === today ? t('Today') : d === addDaysISO(today, 1) ? t('Tomorrow') : longDate(d))
+  const mine = byDay(data?.mine)
+  const mineCount = (data?.mine || []).length
 
   return <div className="narrow au">
     <div className="hdr">
@@ -92,12 +107,34 @@ export default function Aulas() {
     {err && <div className="card small" role="alert">{err}</div>}
     {!data && !err && <div className="small dim au-empty">…</div>}
     {data && !data.gym && <div className="card small dim">{t('You are not in a gym yet. Ask your gym for its code.')}</div>}
-    {data?.gym && !all.length && <div className="card au-empty">
+    {data?.gym && view === 'day' && !all.length && <div className="card au-empty">
       <p className="small dim">{owner ? t('No classes on the timetable yet.') : t('No classes in the next two weeks.')}</p>
       {owner && <Button variant="primary" icon="plus" onClick={() => nav('/aulas/horario')}>{t('Set up the timetable')}</Button>}
     </div>}
 
-    {data?.gym && !!all.length && <>
+    {data?.gym && <Segmented className="au-views" value={view} onChange={v => { setView(v); setOpen(null) }}
+      options={[{ value: 'day', label: t('All classes') }, { value: 'mine', label: mineCount ? t('My classes ({0})', mineCount) : t('My classes') }]} />}
+
+    {data?.gym && view === 'mine' && <section className="au-mine" aria-label={t('My classes')}>
+      {!mine.length && <div className="card au-empty">
+        <p className="small dim">{t('You have no classes booked.')}</p>
+        <Button variant="primary" onClick={() => setView('day')}>{t('See the timetable')}</Button>
+      </div>}
+      {mine.map(d => <div key={d.date} className="au-day">
+        <h2 className="au-date">{dayName(d.date)}</h2>
+        {d.sessions.map(c => <article key={c.id + c.date} className={'card au-s ' + (c.skipped ? 'au-off' : 'au-booked')}>
+          <div className="au-time"><b>{c.starts}</b><span className="small dim">{endTime(c.starts, c.minutes)}</span></div>
+          <div className="au-main">
+            <div className="au-name">{c.name}{c.skipped && <span className="au-pill off">{t('Called off')}</span>}</div>
+            {c.trainer && <div className="au-pt"><Icon name="person" />{t('With {0}', c.trainer)}</div>}
+            {c.room && <div className="small dim">{c.room}</div>}
+          </div>
+          <div className="au-act">{!c.skipped && <Button size="sm" variant="tinted" onClick={() => cancelMine(c)}>{t('Cancel')}</Button>}</div>
+        </article>)}
+      </div>)}
+    </section>}
+
+    {data?.gym && view === 'day' && !!all.length && <>
     <nav className="au-pager" aria-label={t('Day')}>
       <button type="button" className="iconbtn" disabled={idx === 0} onClick={() => go(-1)} aria-label={t('Previous day')}><Icon name="chevronLeft" /></button>
       <div className="au-pager-d" aria-live="polite"><b>{title}</b>{title !== longDate(day) && <span className="small dim">{longDate(day)}</span>}</div>

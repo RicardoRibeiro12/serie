@@ -69,6 +69,9 @@ const BR = {
   "PT": "Personal",
   "No PT": "Sem personal",
   'On now': 'Acontecendo agora',
+  'My classes': 'Minhas aulas',
+  'My classes ({0})': 'Minhas aulas ({0})',
+  'You have no classes booked.': 'Você ainda não tem aulas marcadas.',
   'Show the QR at the front desk when you arrive and when you leave. If you forget on the way out, you are checked out at the end of the day.': 'Mostre o QR na recepção quando chegar e quando sair. Se esquecer na saída, ela fica registrada no fim do dia.'
 }
 const raw = readFileSync(path, 'utf8')

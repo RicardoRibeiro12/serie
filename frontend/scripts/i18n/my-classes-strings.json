@@ -1,0 +1,8 @@
+{
+  "My classes": ["As minhas aulas", "Mes cours"],
+  "My classes ({0})": ["As minhas aulas ({0})", "Mes cours ({0})"],
+  "See the timetable": ["Ver o horário", "Voir le planning"],
+  "You have no classes booked.": ["Ainda não tens aulas marcadas.", "Vous n’avez réservé aucun cours."],
+  "{0} booked class": ["{0} marcada", "{0} réservé"],
+  "{0} booked classes": ["{0} marcadas", "{0} réservés"]
+}

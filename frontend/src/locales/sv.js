@@ -4252,4 +4252,11 @@ export default {
   "{0} person booked": "{0} person booked",
   "With {0}": "With {0}",
   "Next: {0} with {1}, {2}": "Next: {0} with {1}, {2}",
+  "My classes": "My classes",
+  "My classes ({0})": "My classes ({0})",
+  "See the timetable": "See the timetable",
+  "You have no classes booked.": "You have no classes booked.",
+  "{0} booked class": "{0} booked class",
+  "{0} booked classes": "{0} booked classes",
+  "All classes": "All classes",
 }

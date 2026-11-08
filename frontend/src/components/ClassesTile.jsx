@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { api } from '../lib/api.js'
-import { t } from '../lib/i18n.js'
+import { t, tn } from '../lib/i18n.js'
 import { fmtDate, todayISO } from '../lib/format.js'
 import Icon from './Icon.jsx'
+import { addDaysISO } from '../lib/classes.js'
 
 export default function ClassesTile() {
   const nav = useNavigate()
@@ -21,11 +22,11 @@ export default function ClassesTile() {
   }, [on, inGym, user?.id])
   if (!on || !inGym || mine === null) return null
   const next = mine.find(c => !c.skipped) || mine[0]
-  const when = next ? (next.date === todayISO() ? t('Today') : fmtDate(next.date, true)) + ' · ' + next.starts : ''
-  return <button type="button" className="card lrow mc-tile" onClick={() => nav('/aulas')}>
+  const when = next ? (next.date === todayISO() ? t('Today') : next.date === addDaysISO(todayISO(), 1) ? t('Tomorrow') : fmtDate(next.date, true)) + ' · ' + next.starts : ''
+  return <button type="button" className="card lrow mc-tile" onClick={() => nav('/aulas', mine.length ? { state: { mine: true } } : undefined)}>
     <span className="lrow-i" style={{ background: 'var(--indigo, #5856d6)', color: '#fff' }} aria-hidden="true"><Icon name="calendar" /></span>
     <span className="grow mc-tile-copy">
-      <span className="ttl">{t('Classes')}</span>
+      <span className="ttl">{t('Classes')}{mine.length > 0 && <span className="cl-count">{tn('{0} booked class', '{0} booked classes', mine.length)}</span>}</span>
       <span className="small dim">{next ? (next.skipped ? t('{0} was called off', next.name) : (next.trainer ? t('Next: {0} with {1}, {2}', next.name, next.trainer, when) : t('Next: {0}, {1}', next.name, when))) : t('See the timetable and book a place')}</span>
     </span>
     <Icon name="chevronRight" className="dim" />

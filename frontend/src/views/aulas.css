@@ -37,3 +37,5 @@
 .au-pager-d b::first-letter,.au-pager-d span::first-letter{text-transform:uppercase}
 .au-pt{display:flex;align-items:center;gap:6px;font-size:var(--fs-subhead,15px);font-weight:600;color:var(--acc-ink,var(--acc))}
 .au-pt svg{flex:none}
+.au-views{margin-top:14px}
+.au-mine .au-day:first-child{margin-top:14px}

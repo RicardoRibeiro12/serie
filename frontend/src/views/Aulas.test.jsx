@@ -7,7 +7,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 /* Group classes (supabase/classes.sql): a member books and cancels; the class PT and the owner see
    who booked; the owner calls a session off and reaches the weekly timetable. */
-const mocks = vi.hoisted(() => ({ answers: {}, posts: [], confirm: vi.fn(), toasts: [], go: [], user: {} }))
+const mocks = vi.hoisted(() => ({ answers: {}, posts: [], confirm: vi.fn(), toasts: [], go: [], user: {}, locState: null }))
 vi.mock('../lib/api.js', () => ({
   api: (path, init) => {
     if (init?.method === 'POST') mocks.posts.push({ path, body: JSON.parse(init.body) })
@@ -29,7 +29,7 @@ vi.mock('../store/useUI.js', () => {
   useUI.getState = snap
   return { useUI }
 })
-vi.mock('react-router-dom', () => ({ useNavigate: () => to => mocks.go.push(to), Navigate: () => null }))
+vi.mock('react-router-dom', () => ({ useNavigate: () => to => mocks.go.push(to), Navigate: () => null, useLocation: () => ({ state: mocks.locState }) }))
 vi.mock('../sheets.jsx', () => ({ confirmSheet: o => { mocks.confirm(o); o.onConfirm() } }))
 
 const { default: Aulas } = await import('./Aulas.jsx')
@@ -51,13 +51,14 @@ async function render(El = Aulas) {
 }
 const button = (host, text) => [...host.querySelectorAll('button')].find(b => b.textContent.trim() === text)
 
-beforeEach(() => { mocks.answers = {}; mocks.posts = []; mocks.toasts = []; mocks.go = []; mocks.user = { id: 'u1', name: 'Rui' } })
+beforeEach(() => { mocks.locState = null; mocks.answers = {}; mocks.posts = []; mocks.toasts = []; mocks.go = []; mocks.user = { id: 'u1', name: 'Rui' } })
 afterEach(() => { mounted.splice(0).forEach(r => act(() => r.unmount())); document.body.innerHTML = '' })
 
 describe('classes', () => {
   it('a member books a place, and the count follows the server', async () => {
-    mocks.answers['/api/classes'] = { gym: { id: 'g', name: 'Ginásio Central', owner: false }, sessions: [session()], mine: [] }
-    mocks.answers['/api/classes/book'] = { booked: 2, mine: true }
+    let booked = false
+    mocks.answers['/api/classes'] = () => ({ gym: { id: 'g', name: 'Ginásio Central', owner: false }, sessions: [booked ? session({ booked: 2, mine: true }) : session()], mine: [] })
+    mocks.answers['/api/classes/book'] = () => { booked = true; return { booked: 2, mine: true } }
     const host = await render()
     expect(host.textContent).toContain('Spinning')
     expect(host.querySelector('.au-pt').textContent).toBe('With PT Ana')
@@ -114,6 +115,26 @@ describe('classes', () => {
     await act(async () => { button(host, 'Back to today').click() })
     expect(host.querySelector('.au-pager-d b').textContent).toBe('Today')
     expect(host.textContent).toContain('Spinning')
+  })
+  it('My classes lists every booking, with its PT, and cancels from there', async () => {
+    const later = addDaysISO(TODAY, 5)
+    mocks.locState = { mine: true }
+    let mine = [{ id: 'c1', date: TODAY, name: 'Spinning', starts: '18:30', minutes: 50, trainer: 'PT Ana', room: 'Sala 1', skipped: false },
+      { id: 'c3', date: later, name: 'Yoga', starts: '19:30', minutes: 60, trainer: 'PT Rui', room: null, skipped: true }]
+    mocks.answers['/api/classes'] = () => ({ gym: { id: 'g', name: 'G', owner: false }, sessions: [session()], mine })
+    mocks.answers['/api/classes/book'] = () => { mine = mine.slice(1); return { booked: 0, mine: false } }
+    const host = await render()
+    expect(button(host, 'My classes (2)').getAttribute('aria-pressed')).toBe('true')
+    const cards = host.querySelectorAll('.au-mine .au-s')
+    expect(cards.length).toBe(2)
+    expect(cards[0].textContent).toContain('With PT Ana')
+    expect(cards[1].textContent).toContain('Called off')
+    expect(cards[1].querySelector('button')).toBe(null)
+    await act(async () => { cards[0].querySelector('button').click() })
+    await act(async () => {})
+    expect(mocks.posts.at(-1)).toEqual({ path: '/api/classes/book', body: { id: 'c1', date: TODAY, on: false } })
+    expect(host.querySelectorAll('.au-mine .au-s').length).toBe(1)
+    expect(button(host, 'My classes (1)')).toBeTruthy()
   })
   it('an owner with no classes is pointed at the timetable', async () => {
     mocks.user = { id: 'o', admin: true }
