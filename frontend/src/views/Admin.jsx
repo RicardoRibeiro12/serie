@@ -142,9 +142,13 @@ function UserDetail({ id, viewerOwner, onChanged, close, people = [] }) {
   // Password sign-in (#118): the server only sends `password` when the instance offers it. The
   // code comes back once, is shown once, and is never stored anywhere but as a hash.
   const pwInstance = typeof u.password === 'boolean'
+  // Série on Supabase: passwords only, no passkeys and no server shell.
+  const noPasskeys = useStore.getState().config?.passkeys === false
   const resetPassword = () => confirmSheet({
     title: t('Reset {0}’s password?', u.name),
-    message: t('You get a one-time code to hand them. Their current password stops working now and they are signed out everywhere; their passkeys keep working. They set a new password with the code under “Sign in with password”. It is shown once and is valid for 24 hours.'),
+    message: noPasskeys
+      ? t('You get a one-time code to hand them. They set a new password with it under “Sign in with password” → “Have a reset code from your admin?”. It is shown once and is valid for 24 hours.')
+      : t('You get a one-time code to hand them. Their current password stops working now and they are signed out everywhere; their passkeys keep working. They set a new password with the code under “Sign in with password”. It is shown once and is valid for 24 hours.'),
     confirmText: t('Create reset code'),
     danger: true,
     onConfirm: () => api('/api/admin/user/password-reset', { method: 'POST', body: JSON.stringify({ id: u.id }) })
@@ -231,7 +235,7 @@ function UserDetail({ id, viewerOwner, onChanged, close, people = [] }) {
       {pwInstance && <>
         <button className="btn" style={{ margin: '14px 0 4px' }} onClick={resetPassword}>{t('Reset password')}</button>
         <div className="adm-hint">{u.password
-          ? t('For a forgotten password: a one-time code lets them choose a new one. Their current password stops working at once.')
+          ? (noPasskeys ? t('For a forgotten password: a one-time code lets them choose a new one.') : t('For a forgotten password: a one-time code lets them choose a new one. Their current password stops working at once.'))
           : t('No password yet. A one-time code lets them set one. That’s the way back in after losing their only passkey.')}</div>
       </>}
     </>}
@@ -239,7 +243,7 @@ function UserDetail({ id, viewerOwner, onChanged, close, people = [] }) {
       <button className="btn" style={{ margin: '14px 0 4px' }} onClick={makeRecovery}>{t('Recovery code')}</button>
       <div className="adm-hint">{t('Lost every device and passkey? A one-time code gives a new device a passkey for this profile. Works with or without password sign-in.')}</div>
     </>}
-    {u.owner && u.id !== me?.id && <div className="adm-hint" style={{ marginTop: 14 }}>{t('A locked-out owner gets a recovery code from the server itself:')} <code>docker compose exec api node recover.js "{u.name}"</code></div>}
+    {u.owner && u.id !== me?.id && !noPasskeys && <div className="adm-hint" style={{ marginTop: 14 }}>{t('A locked-out owner gets a recovery code from the server itself:')} <code>docker compose exec api node recover.js "{u.name}"</code></div>}
     <h4 className="sec">{t('Workout history')}</h4>
     {workouts.length ? <div className="list" style={{ gap: 0 }}>
       {workouts.slice(0, 60).map(w => <div key={w.id} className="row between" style={{ padding: '9px 2px', borderBottom: '1px solid var(--sep)' }}>

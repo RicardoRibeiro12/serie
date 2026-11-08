@@ -20,6 +20,7 @@ import PlanOfferCard from '../components/PlanOfferCard.jsx'
 import TrainerPlansCard from '../components/TrainerPlansCard.jsx'
 import MemberCardTile from '../components/MemberCardTile.jsx'
 import GymOwnerCard from '../components/GymOwnerCard.jsx'
+import ClassesTile from '../components/ClassesTile.jsx'
 import { scheduleModeOf } from '../lib/rotation.js'
 import { useConnectionTrouble } from '../components/SyncBanner.jsx'
 import { Button } from '../components/ui.jsx'
@@ -199,6 +200,7 @@ export default function Home() {
     <PlanOfferCard />
     <GymOwnerCard />
     <MemberCardTile />
+    <ClassesTile />
     <TrainerPlansCard />
 
     {/* Monday: Your week; the 1st: Your month (lib/recap.js). Off in Settings → Look & Home. */}

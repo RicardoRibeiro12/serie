@@ -51,6 +51,23 @@ const BR = {
   'They find it in their exercises and can put it in their students’ plans.': 'Aparece nos exercícios deles, e eles podem colocá-lo nos planos dos alunos.',
   'Shared in the gym by {0}': 'Compartilhado na academia por {0}',
   'Shared in the gym': 'Compartilhado na academia',
+  "Booked a class and did not come": "Reservaram aula e não vieram",
+  "Cancel your place?": "Cancelar sua reserva?",
+  "Class saved": "Aula salva",
+  "For a forgotten password: a one-time code lets them choose a new one.": "Para uma senha esquecida: um código de uso único permite escolher uma nova.",
+  "No classes yet. Add the first one: a name, its PT, the day and time, and how many places.": "Ainda não há aulas. Adicione a primeira: o nome, o personal, o dia e a hora, e quantas vagas tem.",
+  "See the timetable and book a place": "Veja o horário e reserve seu lugar",
+  "That person is not a PT of this gym.": "Essa pessoa não é personal desta academia.",
+  "You are not in a gym yet. Ask your gym for its code.": "Você ainda não está em uma academia. Peça o código à sua academia.",
+  "You can cancel until the class starts. If you booked and cannot come, cancel so someone else gets the place.": "Você pode cancelar até a aula começar. Se reservou e não pode vir, cancele para outra pessoa ficar com a vaga.",
+  "You get a one-time code to hand them. They set a new password with it under “Sign in with password” → “Have a reset code from your admin?”. It is shown once and is valid for 24 hours.": "Você recebe um código de uso único para entregar. Com ele, a pessoa define uma senha nova em “Entrar com senha” → “Tem um código de redefinição do administrador?”. Ele aparece só uma vez e vale 24 horas.",
+  "You’re in": "Você está inscrito",
+  "e.g. Studio 1": "ex.: Estúdio 1",
+  "last {0} days, no entry at the front desk that day": "últimos {0} dias, sem entrada na recepção nesse dia",
+  "{0} on {1} will not take place. Members who booked see it is called off; tell them in person too.": "{0} de {1} não vai acontecer. Quem reservou vê que foi cancelada; avise também pessoalmente.",
+  "{0}, {1} at {2}. Your place goes to someone else.": "{0}, {1} às {2}. Sua vaga fica livre para outra pessoa.",
+  "PT": "Personal",
+  "No PT": "Sem personal",
   'Show the QR at the front desk when you arrive and when you leave. If you forget on the way out, you are checked out at the end of the day.': 'Mostre o QR na recepção quando chegar e quando sair. Se esquecer na saída, ela fica registrada no fim do dia.'
 }
 const raw = readFileSync(path, 'utf8')

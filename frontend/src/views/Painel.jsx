@@ -36,11 +36,18 @@ export default function Painel() {
   const [desk, setDesk] = useState('')
   const [deskOut, setDeskOut] = useState(null)
   const [tip, setTip] = useState(null)
+  // Group classes (supabase/classes.sql): who booked and did not come, to have a word with them.
+  const classesOn = useStore(s => !!s.config?.classes)
+  const [noShows, setNoShows] = useState(null)
 
   const load = () => Promise.all([
     api('/api/admin/visits?days=90'), api('/api/admin/cards'), api('/api/admin/users').catch(() => ({ users: [] }))
   ]).then(([v, c, u]) => { setData({ report: v, members: c.members || [], users: u.users || [], gym: v.gym || c.gym || '' }); setErr('') })
     .catch(e => setErr(e.message))
+  useEffect(() => {
+    if (!me?.admin || !classesOn) return
+    api('/api/admin/classes/no-shows?days=30').then(r => setNoShows(r.people || [])).catch(() => setNoShows(null))
+  }, [me?.admin, classesOn])
   useEffect(() => {
     if (!me?.admin) return
     load()
@@ -150,6 +157,15 @@ export default function Painel() {
           <ul className="pn-list pn-present">{view.present.map(p => <li key={p.uid}><span>{p.name}</span><span className="pn-dim">{hm(p.in)}</span></li>)}</ul>
         </div>
       </section>
+
+      {classesOn && <section className="pn-panel pn-noshow">
+        <div className="pn-head"><h2>{t('Booked a class and did not come')}</h2><span className="pn-sub">{t('last {0} days, no entry at the front desk that day', 30)}</span>
+          <button type="button" className="pn-btn pn-btn-ghost" onClick={() => nav('/aulas')}>{t('Classes')}</button></div>
+        {noShows === null ? <p className="pn-dim">…</p> : noShows.length ? <table className="pn-table compact">
+          <thead><tr><th>{t('Member')}</th><th className="num">{t('Missed')}</th><th className="num">{t('Came')}</th><th>{t('Last missed')}</th><th>{t('Classes')}</th></tr></thead>
+          <tbody>{noShows.map(p => <tr key={p.id}><td>{p.name}</td><td className="num">{p.misses}</td><td className="num">{p.kept}</td><td>{p.last ? dm(Date.parse(p.last + 'T12:00:00')) : ''}</td><td className="pn-dim">{(p.classes || []).join(', ')}</td></tr>)}</tbody>
+        </table> : <p className="pn-dim">{t('Everyone who booked a class came.')}</p>}
+      </section>}
 
       <section className="pn-panel">
         <div className="pn-head pn-tablehead">

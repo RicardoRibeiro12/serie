@@ -111,6 +111,11 @@ const deskGym = async () => {
   if (!g) throw fail('forbidden', 403)
   return g
 }
+// The gym whose classes this person sees: the one they own, else the first they belong to (not as the desk).
+const classGym = async () => {
+  const m = await me()
+  return (m.gyms || []).find(x => x.role === 'owner') || (m.gyms || []).find(x => x.role !== 'desk') || null
+}
 const ownGym = async () => {
   const m = await me()
   const g = (m.gyms || []).find(x => x.role === 'owner')
@@ -171,7 +176,31 @@ const ok = { ok: true }
 // ---- routes: 'METHOD /path' (no query) → (body, path) => answer
 const ROUTES = {
   'GET /api/health': () => ({ ok: true }),
-  'GET /api/config': () => ({ invite_only: false, allow_guest: false, password_login: true, passkeys: false, invite_field: true, consent: true, shared_exercises: true, backend: 'supabase' }),
+  'GET /api/config': () => ({ invite_only: false, allow_guest: false, password_login: true, passkeys: false, invite_field: true, consent: true, shared_exercises: true, classes: true, backend: 'supabase' }),
+  // Group classes (supabase/classes.sql): the timetable, bookings, and the owner's no-show list.
+  'GET /api/classes': async (b, path) => {
+    const g = await classGym()
+    if (!g) return { gym: null, sessions: [], mine: [] }
+    const days = Math.max(1, Math.min(28, Number(q(path, 'days')) || 7))
+    const [sessions, mine] = await Promise.all([rpc('class_schedule', { p_gym: g.id, p_days: days }), rpc('my_classes')])
+    return { gym: { id: g.id, name: g.name, owner: g.role === 'owner' }, sessions: sessions || [], mine: mine || [] }
+  },
+  'GET /api/classes/mine': async () => ({ mine: (await rpc('my_classes')) || [] }),
+  'POST /api/classes/book': async b => rpc('book_class', { p_id: b.id, p_date: b.date, p_on: b.on === true }),
+  'GET /api/admin/classes': async () => { const g = await ownGym(); return { classes: (await rpc('gym_class_list', { p_gym: g.id })) || [] } },
+  'POST /api/admin/classes/save': async b => {
+    const g = await ownGym()
+    const id = await rpc('save_class', { p_gym: g.id, p_id: b.id || null, p_name: b.name, p_trainer: b.trainerId || null, p_weekday: b.weekday,
+      p_starts: b.starts, p_minutes: b.minutes, p_capacity: b.capacity, p_room: b.room || null })
+    return { ok: true, id }
+  },
+  'POST /api/admin/classes/remove': async b => { const g = await ownGym(); await rpc('remove_class', { p_gym: g.id, p_id: b.id }); return ok },
+  'POST /api/admin/classes/skip': async b => { await rpc('skip_class', { p_id: b.id, p_date: b.date, p_skip: b.skip === true }); return ok },
+  'GET /api/admin/classes/no-shows': async (b, path) => {
+    const g = await ownGym()
+    const days = Math.max(1, Math.min(365, Number(q(path, 'days')) || 30))
+    return { days, people: (await rpc('class_no_shows', { p_gym: g.id, p_days: days })) || [] }
+  },
   // Exercises shared with the gym's PTs (supabase/app.sql, lib/gym-exercises.js).
   'GET /api/gym/exercises': async () => ({ exercises: (await rpc('gym_exercise_list')) || [] }),
   'POST /api/gym/exercises/share': async b => ({ ok: true, gyms: await rpc('share_exercise', { p_ex: b.ex, p_on: b.on === true }) }),

@@ -89,6 +89,8 @@ const Trainer = lazyView(() => import('./views/Trainer.jsx'))
 const TrainerStudent = lazyView(() => import('./views/TrainerStudent.jsx'))
 const MemberCard = lazyView(() => import('./views/MemberCard.jsx'))
 const Painel = lazyView(() => import('./views/Painel.jsx'))
+const Aulas = lazyView(() => import('./views/Aulas.jsx'))
+const AulasHorario = lazyView(() => import('./views/AulasHorario.jsx'))
 const DataConsent = lazyView(() => import('./views/DataConsent.jsx'))
 const Rececao = lazyView(() => import('./views/Rececao.jsx'))
 const CoachChat = lazyView(() => import('./views/CoachChat.jsx'))
@@ -386,6 +388,8 @@ function Shell() {
       <Route path="/trainer" element={user?.trainer ? <Trainer /> : <Navigate to="/home" replace />} />
       <Route path="/card" element={<MemberCard />} />
       <Route path="/painel" element={<Painel />} />
+      {config?.classes && user && <Route path="/aulas" element={<Aulas />} />}
+      {config?.classes && user && <Route path="/aulas/horario" element={<AulasHorario />} />}
       <Route path="/data-consent" element={<DataConsent />} />
       <Route path="/rececao" element={<Rececao />} />
       <Route path="/trainer/:id" element={user?.trainer ? <TrainerStudent /> : <Navigate to="/home" replace />} />
