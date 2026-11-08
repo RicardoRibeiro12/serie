@@ -45,6 +45,7 @@ import { excusedOn, nudgeFor, nudgeWindowOpen, toneOf } from './nudge.js';
 import { verifyEdgeSignature, edgeClientIp } from './edge-proxy.js';
 import { isTrainer, studentsOf, offerFor, makeOffer, putOffer, dropOffer, forgetUser, makeAssessment, assessmentsFor, assessmentHistory, addAssessment, dropAssessments, plansFor, makeLibraryPlan, putLibraryPlan, dropLibraryPlan, progressOf } from './trainer.js';
 import { cardOf, cardByCode, issueCard, newCardCode, setCardStatus, checkInOut, openVisit, closeStale, visitReport, forgetMember, qrText, codeFromQr } from './members.js';
+import { saveClass, removeClass, skipClass, classList, schedule, book, myClasses, noShows, forgetClasses } from './classes.js';
 import { wrappedPushYear, wrappedSummary, wrappedPushOwed, wrappedPush } from './wrapped.js';
 
 const PORT = +(process.env.PORT || 3000);
@@ -1360,6 +1361,7 @@ function removeAccount(u) {
   db.users = db.users.filter(x => x.id !== u.id);
   forgetUser(db, u.id);
   forgetMember(db, u.id);
+  forgetClasses(db, u.id);
   db.creds = (db.creds || []).filter(c => c.userId !== u.id);
   db.subs = (db.subs || []).filter(x => x.userId !== u.id);
   dropDeviceLinks(db, u.id);
@@ -2142,7 +2144,9 @@ const routes = {
       ...(readSession(req) ? { coach: coachConfig.publicConfig() } : {}),
       // Which integrations this server offers (only to a session, like the Coach block). Absent
       // with INTEGRATIONS unset, which is how the app knows to show the server cards as off.
-      ...(readSession(req) && integrations.publicConfig() ? { integrations: integrations.publicConfig() } : {})
+      ...(readSession(req) && integrations.publicConfig() ? { integrations: integrations.publicConfig() } : {}),
+      // Série: group classes (classes.js), the same screens as on Supabase.
+      classes: true
     });
   },
 
@@ -3218,6 +3222,62 @@ const routes = {
     if (!requireAdmin(req, res)) return;
     if (closeStale(db)) saveDb();
     json(res, 200, { gym: GYM_NAME, present: (db.visits || []).filter(v => !v.out).length });
+  },
+
+  /* ---------- group classes (classes.js; supabase/classes.sql on the hosted app) ---------- */
+  // The week ahead for anyone signed in; the owner and the class's PT also get who booked.
+  'GET /api/classes': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    const days = Math.max(1, Math.min(28, +new URL(req.url, 'http://x').searchParams.get('days') || 7));
+    const nameOf = uid => (db.users.find(u => u.id === uid) || {}).name || null;
+    json(res, 200, { gym: { id: 'local', name: GYM_NAME, owner: isAdmin(me) },
+      sessions: schedule(db, { uid: me.id, owner: isAdmin(me), days, nameOf }), mine: myClasses(db, { uid: me.id, nameOf, gym: GYM_NAME }) });
+  },
+  'GET /api/classes/mine': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    json(res, 200, { mine: myClasses(db, { uid: me.id, nameOf: uid => (db.users.find(u => u.id === uid) || {}).name || null, gym: GYM_NAME }) });
+  },
+  'POST /api/classes/book': async (req, res) => {
+    const me = readSession(req);
+    if (!me) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    const r = book(db, { uid: me.id, id: text(body.id), date: text(body.date), on: body.on === true });
+    if (r.error) return json(res, /no such/.test(r.error) ? 404 : 409, { error: r.error });
+    saveDb();
+    json(res, 200, r);
+  },
+  'GET /api/admin/classes': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    json(res, 200, { classes: classList(db, { nameOf: uid => (db.users.find(u => u.id === uid) || {}).name || null }) });
+  },
+  'POST /api/admin/classes/save': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const body = await readBody(req);
+    const r = saveClass(db, body, { canTeach: uid => { const u = db.users.find(x => x.id === uid); return !!u && (isTrainer(u) || isAdmin(u)); } });
+    if (r.error) return json(res, 400, { error: r.error });
+    saveDb();
+    json(res, 200, { ok: true, id: r.class.id });
+  },
+  'POST /api/admin/classes/remove': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const body = await readBody(req);
+    if (!removeClass(db, text(body.id))) return json(res, 404, { error: 'no such class' });
+    saveDb();
+    json(res, 200, { ok: true });
+  },
+  'POST /api/admin/classes/skip': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const body = await readBody(req);
+    if (!skipClass(db, text(body.id), text(body.date), body.skip === true)) return json(res, 404, { error: 'no such class' });
+    saveDb();
+    json(res, 200, { ok: true });
+  },
+  'GET /api/admin/classes/no-shows': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const days = Math.max(1, Math.min(365, +new URL(req.url, 'http://x').searchParams.get('days') || 30));
+    json(res, 200, { days, people: noShows(db, { days, nameOf: uid => (db.users.find(u => u.id === uid) || {}).name || null }) });
   },
 
   // Entries and exits: who is in now, the last days' visits and the entries per day.

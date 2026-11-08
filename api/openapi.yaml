@@ -3461,6 +3461,131 @@ paths:
                   present: { type: integer }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+  /api/classes:
+    get:
+      tags: [members]
+      operationId: classes
+      summary: 'Group classes: the sessions ahead, with places, and the caller''s bookings'
+      parameters:
+        - { name: days, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 28 } }
+      responses:
+        '200': { description: 'The gym, its sessions (who booked, for the owner and the class PT) and the caller''s bookings.' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/classes/mine:
+    get:
+      tags: [members]
+      operationId: myClasses
+      summary: 'Group classes: the caller''s bookings still to come'
+      responses:
+        '200': { description: The bookings. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/classes/book:
+    post:
+      tags: [members]
+      operationId: bookClass
+      summary: 'Group classes: book a place (on) or cancel it, until the class starts'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, date]
+              properties:
+                id: { type: string }
+                date: { type: string, format: date }
+                on: { type: boolean }
+      responses:
+        '200': { description: 'The session''s count and whether the caller is in.' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: No such class or session. }
+        '409': { description: 'Full, called off or already started.' }
+  /api/admin/classes:
+    get:
+      tags: [members]
+      operationId: adminClasses
+      summary: 'Admin: the weekly class timetable'
+      responses:
+        '200': { description: The classes. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/admin/classes/save:
+    post:
+      tags: [members]
+      operationId: adminSaveClass
+      summary: 'Admin: add (no id) or change a class on the timetable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, weekday, starts, minutes, capacity]
+              properties:
+                id: { type: string }
+                name: { type: string, maxLength: 60 }
+                trainerId: { type: string, nullable: true }
+                weekday: { type: integer, minimum: 1, maximum: 7 }
+                starts: { type: string, example: "18:30" }
+                minutes: { type: integer, minimum: 10, maximum: 240 }
+                capacity: { type: integer, minimum: 1, maximum: 500 }
+                room: { type: string, maxLength: 40 }
+      responses:
+        '200': { description: Saved. }
+        '400': { description: 'A field is out of range, or the PT is not a trainer of the gym.' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/admin/classes/remove:
+    post:
+      tags: [members]
+      operationId: adminRemoveClass
+      summary: 'Admin: take a class off the timetable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+      responses:
+        '200': { description: Removed. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: No such class. }
+  /api/admin/classes/skip:
+    post:
+      tags: [members]
+      operationId: adminSkipClass
+      summary: 'Admin: call one session off (skip) or put it back on'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, date]
+              properties:
+                id: { type: string }
+                date: { type: string, format: date }
+                skip: { type: boolean }
+      responses:
+        '200': { description: Done. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: No such class. }
+  /api/admin/classes/no-shows:
+    get:
+      tags: [members]
+      operationId: adminClassNoShows
+      summary: 'Admin: who booked a class and did not come (no entry that day)'
+      parameters:
+        - { name: days, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 365 } }
+      responses:
+        '200': { description: 'The people, most misses first.' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /api/admin/visits:
     get:
       tags: [members]

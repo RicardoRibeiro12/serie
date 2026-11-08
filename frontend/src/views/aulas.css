@@ -1,5 +1,6 @@
 /* Group classes (views/Aulas.jsx, views/AulasHorario.jsx). */
 .au .hdr{gap:10px;align-items:center}
+.au .hdr .grow{flex:1 1 auto;min-width:0}
 .au-empty{text-align:center;padding:22px 16px}
 .au-empty .btn{margin-top:10px}
 .au-day{margin-top:18px}
