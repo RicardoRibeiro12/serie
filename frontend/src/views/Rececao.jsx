@@ -12,6 +12,7 @@ import { api } from '../lib/api.js'
 import { t } from '../lib/i18n.js'
 import { dateLocale } from '../lib/i18n-core.js'
 import CameraScan from '../components/CameraScan.jsx'
+import DeskClasses from '../components/DeskClasses.jsx'
 import Icon from '../components/Icon.jsx'
 import '../rececao.css'
 
@@ -46,6 +47,9 @@ export default function Rececao() {
   const [present, setPresent] = useState(null)
   const [gym, setGym] = useState('')
   const [sound, setSound] = useState(true)
+  // Today's classes, for a PT at the desk computer (components/DeskClasses.jsx).
+  const classesOn = useStore(s => !!s.config?.classes)
+  const [showClasses, setShowClasses] = useState(false)
   const input = useRef(null)
   const timer = useRef(null)
   const busy = useRef(false)
@@ -95,6 +99,7 @@ export default function Rececao() {
       <div className="rc-gym"><span className="rc-mark" aria-hidden="true" />{gym || t('Front desk')}</div>
       <div className="rc-tools">
         <button type="button" className="rc-btn" onClick={() => setSound(s => !s)} aria-pressed={sound}>{sound ? t('Sound on') : t('Sound off')}</button>
+        {classesOn && <button type="button" className="rc-btn" onClick={() => setShowClasses(v => !v)} aria-pressed={showClasses}><Icon name="calendar" /> {t('Today’s classes')}</button>}
         <button type="button" className="rc-btn" onClick={camera}><Icon name="qr" /> {t('Use the camera')}</button>
         {me.admin && <button type="button" className="rc-btn" onClick={() => nav('/painel')}>{t('Dashboard')}</button>}
         {!me.admin && <button type="button" className="rc-btn" onClick={() => useStore.getState().signOut()}>{t('Sign out')}</button>}
@@ -114,6 +119,8 @@ export default function Rececao() {
           <div className="rc-sub">{t('On the way in and on the way out.')}</div>
         </div>}
     </main>
+
+    {showClasses && <DeskClasses onClose={() => setShowClasses(false)} />}
 
     <footer className="rc-foot">
       <div><span className="rc-count">{present ?? '–'}</span> {t('in the gym now')}</div>

@@ -111,10 +111,11 @@ const deskGym = async () => {
   if (!g) throw fail('forbidden', 403)
   return g
 }
-// The gym whose classes this person sees: the one they own, else the first they belong to (not as the desk).
+// The gym whose classes this person sees: the one they own, else the first they belong to, else the
+// one whose front desk they run (Rececao.jsx shows today's classes there).
 const classGym = async () => {
   const m = await me()
-  return (m.gyms || []).find(x => x.role === 'owner') || (m.gyms || []).find(x => x.role !== 'desk') || null
+  return (m.gyms || []).find(x => x.role === 'owner') || (m.gyms || []).find(x => x.role !== 'desk') || (m.gyms || []).find(x => x.role === 'desk') || null
 }
 const ownGym = async () => {
   const m = await me()

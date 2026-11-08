@@ -70,6 +70,7 @@ ok((await err('aluno', 'select public.book_class($1, public.lisbon_today() + 2, 
 const deskInv = (await as('owner', "select (public.create_invite('desk', $1)).code c", [gym]))[0].c
 await as('desk', 'select public.app_join($1, $2)', ['Receção', deskInv])
 ok((await err('desk', 'select public.book_class($1, $2, true)', [cls, day])) !== null, 'the front desk account does not book')
+ok(Array.isArray((await as('desk', 'select public.class_schedule($1, 7) s', [gym]))[0].s.find(x => x.id === cls)?.roster), 'the front desk sees who booked, for the PTs at the desk computer')
 sch = (await as('pt', 'select public.class_schedule($1, 7) s', [gym]))[0].s
 ok(JSON.stringify(sch.find(x => x.id === cls).roster) === JSON.stringify(['Aluno Rui', 'PT Ana']), 'the class PT sees who booked')
 ok((await as('aluno', 'select public.my_classes() m'))[0].m[0].name === 'Spinning', 'the member sees their booking')

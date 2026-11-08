@@ -111,11 +111,12 @@ begin
   return true;
 end $$;
 
--- The timetable from today for p_days days: one row per session. The owner and the class's PT also get
--- who booked it (roster); a member gets only the count and whether they are in.
+-- The timetable from today for p_days days: one row per session. The owner, the front desk (so a PT can
+-- check at the desk computer) and the class's PT also get who booked it (roster); a member gets only
+-- the count and whether they are in.
 create or replace function public.class_schedule(p_gym uuid, p_days integer default 7) returns jsonb
 language plpgsql stable security definer set search_path = public as $$
-declare v_today date := public.lisbon_today(); v_owner boolean := public.owns_gym(p_gym);
+declare v_today date := public.lisbon_today(); v_owner boolean := public.owns_gym(p_gym); v_desk boolean := public.is_desk_in(p_gym);
 begin
   if not (public.can_book_in(p_gym) or public.is_desk_in(p_gym)) then raise exception 'not your gym' using errcode = '42501'; end if;
   return coalesce((
@@ -126,7 +127,7 @@ begin
       'mine', exists (select 1 from class_bookings b where b.class_id = c.id and b.on_date = d.d and b.user_id = auth.uid() and b.cancelled_at is null),
       'skipped', exists (select 1 from class_skips s where s.class_id = c.id and s.on_date = d.d),
       'started', public.class_start(d.d, c.starts) <= now(),
-      'roster', case when v_owner or c.trainer_id = auth.uid() then
+      'roster', case when v_owner or v_desk or c.trainer_id = auth.uid() then
         (select coalesce(jsonb_agg(p.name order by b.booked_at), '[]'::jsonb) from class_bookings b join profiles p on p.id = b.user_id
           where b.class_id = c.id and b.on_date = d.d and b.cancelled_at is null) end
     ) order by d.d, c.starts, c.name)

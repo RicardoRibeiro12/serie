@@ -24,3 +24,21 @@
 .rc-label{font-size:.8rem;opacity:.7}
 .rc-input{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid rgba(242,240,234,.25);background:rgba(0,0,0,.25);color:#f2f0ea;font-family:var(--font-mono);font-size:1rem;letter-spacing:.06em}
 .rc-input:focus{outline:2px solid #ff6b2c;outline-offset:1px}
+/* Today's classes (components/DeskClasses.jsx): a panel on the right, read-only, so the reader keeps working. */
+.rc-classes{position:fixed;top:76px;right:clamp(16px,3vw,32px);max-height:calc(100vh - 186px);width:min(400px,calc(100vw - 32px));overflow:auto;z-index:2;
+  background:#1a1a18;border:1px solid rgba(242,240,234,.14);border-radius:16px;padding:16px 18px;box-shadow:0 20px 50px -20px rgba(0,0,0,.7)}
+.rc-classes-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.rc-classes-head h2{margin:0;font-size:1.15rem;font-weight:800;text-transform:uppercase;letter-spacing:.02em}
+.rc-classes-dim{color:rgba(242,240,234,.6);font-size:.9rem;margin:2px 0}
+.rc-classes-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.rc-class{padding:12px 14px;border-radius:12px;background:rgba(242,240,234,.05);border:1px solid rgba(242,240,234,.08)}
+.rc-class.now{border-color:#ff6b2c}
+.rc-class.off{opacity:.55}
+.rc-class-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums}
+.rc-class-time{font-weight:700}
+.rc-class-count{font-size:1.1rem;color:rgba(242,240,234,.7)}
+.rc-class-count b{font-size:1.6rem;color:#ff6b2c}
+.rc-class-name{font-size:1.05rem;font-weight:700;margin-top:2px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rc-class-tag{font-size:.7rem;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:rgba(242,240,234,.12)}
+.rc-class-tag.now{background:#ff6b2c;color:#0f0f0e}
+.rc-class-roster{margin:8px 0 0;padding-inline-start:20px;columns:2;column-gap:16px;font-size:.92rem}

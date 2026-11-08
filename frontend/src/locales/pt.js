@@ -4197,4 +4197,8 @@ export default {
   "No classes on this day.": "Não há aulas neste dia.",
   "Previous day": "Dia anterior",
   "Tomorrow": "Amanhã",
+  "No more classes today.": "Não há mais aulas hoje.",
+  "On now": "A decorrer",
+  "Today’s classes": "Aulas de hoje",
+  "{0} of {1} places taken": "{0} de {1} vagas ocupadas",
 }

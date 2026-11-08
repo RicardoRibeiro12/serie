@@ -68,6 +68,7 @@ const BR = {
   "{0}, {1} at {2}. Your place goes to someone else.": "{0}, {1} às {2}. Sua vaga fica livre para outra pessoa.",
   "PT": "Personal",
   "No PT": "Sem personal",
+  'On now': 'Acontecendo agora',
   'Show the QR at the front desk when you arrive and when you leave. If you forget on the way out, you are checked out at the end of the day.': 'Mostre o QR na recepção quando chegar e quando sair. Se esquecer na saída, ela fica registrada no fim do dia.'
 }
 const raw = readFileSync(path, 'utf8')
