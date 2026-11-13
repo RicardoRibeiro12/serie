@@ -53,18 +53,6 @@ test('every route the server registers is in openapi.yaml, and nothing else is',
   }
 });
 
-test('every tag the spec uses is one the docs generator renders', () => {
-  const declared = [...spec.matchAll(/^ {2}- name: (\S+)$/gm)].map(m => m[1]);
-  const used = new Set([...spec.matchAll(/^ {6}tags: \[([^\]]+)\]/gm)].flatMap(m => m[1].split(',').map(s => s.trim())));
-  for (const tag of used) assert.ok(declared.includes(tag), `tag "${tag}" is used but never declared under tags:`);
-
-  // scripts/build-api-docs.mjs renders one section per entry in its own TAGS map and drops any
-  // operation whose first tag is not in it — silently, which is how ten Coach routes went
-  // missing from the published page while being perfectly well documented here.
-  const docs = read(path.join(ROOT, 'scripts', 'build-api-docs.mjs'));
-  const known = [.../const TAGS = \{([\s\S]*?)\n\}/.exec(docs)[1].matchAll(/^\s{2}(\w+):/gm)].map(m => m[1]);
-  for (const tag of used) assert.ok(known.includes(tag), `tag "${tag}" renders nowhere — add it to TAGS in scripts/build-api-docs.mjs`);
-});
 
 /* The e-mail routes answer with codes a client switches on. /api/register/password answered
    `400 email-invalid` for a while with the spec listing only the password policy under 400. */
@@ -110,14 +98,3 @@ test('every error code the e-mail and password signup routes return is in their 
 
 /* #795: the generator kept its own copy of the website's ?v= and fell behind index.html, so
    --check went red on main. It reads index.html now; this keeps it from growing a copy again. */
-test('the docs generator takes the website ?v= from index.html, and every page agrees', () => {
-  const docs = read(path.join(ROOT, 'scripts', 'build-api-docs.mjs'));
-  assert.doesNotMatch(docs, /\?v=\d/, 'build-api-docs.mjs hard-codes a ?v= number, read it from website/index.html');
-  const web = path.join(ROOT, 'website');
-  const v = /styles\.css\?v=(\d+)/.exec(read(path.join(web, 'index.html')))[1];
-  for (const f of fs.readdirSync(web).filter(f => f.endsWith('.html'))) {
-    for (const m of read(path.join(web, f)).matchAll(/(?:styles\.css|site\.js)\?v=(\d+)/g)) {
-      assert.equal(m[1], v, `website/${f} links ${m[0]}, index.html is on ?v=${v}`);
-    }
-  }
-});

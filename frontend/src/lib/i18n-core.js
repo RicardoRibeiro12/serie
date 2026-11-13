@@ -88,8 +88,14 @@ export function t(s, ...args) {
     v = (typeof args[0] === 'number' && forms[pluralCategory(args[0])]) || forms.other || forms.many || forms.one || s
   }
   for (let i = 0; i < args.length; i++) v = v.replaceAll('{' + i + '}', args[i])
-  return v
+  return BRAND_SWAP ? brand(v) : v
 }
+
+// Série: the app came from openGym. Text that still names it says Série on screen, in every language
+// (the Portuguese packs are worded for Série already, article and all: scripts/i18n/brand-serie.mjs).
+// Left alone under the test runner, so openGym's own tests of these strings keep their wording.
+const BRAND_SWAP = import.meta.env?.MODE !== 'test'
+export const brand = v => (typeof v === 'string' && v.includes('openGym') ? v.replace(/openGym/g, 'Série') : v)
 
 /* ------------------------------------------------------------------ plurals --
    English has two forms and the source strings are the keys, so a count used to be

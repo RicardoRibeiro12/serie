@@ -1,5 +1,0 @@
-msgid "lang"
-msgstr "tr"
-
-msgid "appName"
-msgstr "openGym"

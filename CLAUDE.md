@@ -5,70 +5,59 @@ For people, the same map with diagrams is [docs/ARCHITECTURE.md](docs/ARCHITECTU
 
 ## What this is
 
-openGym is a self-hosted gym and body-weight tracker. Two containers (`api` + `web`) plus a
-`./data` folder the user owns: no third-party account, no telemetry. Passkey (WebAuthn) login,
-installable as a PWA, and Capacitor apps for Android and iPhone (with an Apple Watch app and
-widgets) that work on their own or synced to a server. License: AGPL-3.0-or-later; the exercise
-media are licensed separately (NOTICE.md).
+Série is a gym app for members, personal trainers and gym owners: training plans and logging,
+assessments, membership cards with a QR read at the front desk, group classes with bookings, and a
+dashboard for the owner. It started as a fork of openGym (AGPL-3.0-or-later); the native phone and
+watch apps, Docker/Kubernetes deployment, MCP server and openGym's site were removed. The hosted app
+runs on Netlify (site + app) with Supabase as the backend; the local Node server in `api/` is kept
+for development and tests. The exercise media are licensed separately (NOTICE.md).
 
 ## Project layout
 
 ```
 frontend/   React 19 + Vite app (src/views, src/components, src/store, src/lib, src/sheets.jsx).
-            android/ + ios/ are the Capacitor shells (docs/MOBILE.md); ios/ also holds the watch
-            app (Watch, WatchCore, WatchWidgets), the widgets and the animation-pack downloader.
-            android/wear is the Wear OS watch app (Kotlin, Compose; docs/WEAR_OS.md), on the same
-            watch protocol as the Apple Watch (lib/watch-sync.js). garmin/ is the Garmin Connect IQ
-            watch app (Monkey C; docs/GARMIN.md), on a cut-down snapshot (lib/garmin-snapshot.js).
-api/        Backend: server.js (plain node:http) plus small testable modules beside it.
-            coach/ is the optional AI coach; coach/core/ is shared with the phone apps.
-            openapi.yaml documents every route.
-web/        Multi-stage Dockerfile (builds frontend, adds catalogue/media, serves with nginx) and
-            nginx.conf.template (serves the app, proxies /api).
+            src/lib/supa-api.js maps the app's /api/... routes onto Supabase when VITE_SUPABASE_* is set.
+api/        Local backend: server.js (plain node:http) plus small testable modules beside it
+            (members.js cards and entries, classes.js group classes, trainer.js PTs). openapi.yaml
+            documents every route. coach/ is openGym's AI coach, switched off in Série.
+supabase/   schema.sql, app.sql, classes.sql, reset.sql (run in that order in the SQL editor) and
+            their PGlite tests (app-test.mjs, classes-test.mjs, reset-test.mjs).
+landing/    The public pages (pt-PT), built with the app by scripts/build-site.mjs into ./site.
 catalogue/  The exercise database: exercises/<id>.json, i18n/, licensed 180 px media/.
-mcp/        Optional stdio MCP server: reads DATA_DIR, and its one write tool (log_workout)
-            saves through the api. Not in the Docker build.
-scripts/    Build, CI and release helpers (scripts/README.md).
-website/    opengym.ch, plain HTML/CSS/JS, deployed separately.
-helm/, kubernetes/, contrib/nix/   Other ways to deploy.
-docs/       Guides indexed in docs/README.md; docs/dev/ holds feature design notes.
+scripts/    Site build, catalogue tools, local dev helpers.
+docs/       ARCHITECTURE.md, API.md, MODULES.md and docs/dev design notes (from openGym).
 ```
 
 ## Commands
 
 ```bash
-# Local stack (api + web, prebuilt or built from source)
-cp .env.example .env
-docker compose up -d --build
+# Local API on :3000 (data in ./data)
+cd api && node server.js
 
 # Frontend dev server (hot reload), proxies /api to :3000
 cd frontend && npm install && npm run dev
 
-# Tests (Node 22, the version CI and the Dockerfiles use)
+# Tests (Node 22, the version CI uses)
 cd frontend && npm test                          # vitest run, the whole suite
 cd frontend && npx vitest run src/lib/progression.test.js   # one file
 cd frontend && npx vitest run -t "some test name"           # one test by name
 cd api && npm test                               # node --test
-cd mcp && npm test
 
 # Checks CI runs besides the suites (run `npm ci` in the repo root once, for js-yaml)
 cd frontend && node scripts/check-locales.mjs && node scripts/check-source-strings.mjs --strict
 node scripts/catalogue/build.mjs --check
 node scripts/build-coach-assets.mjs --check
-node scripts/build-api-docs.mjs --check
 
 # Builds
 cd frontend && npm run build
-cd frontend && npm run build:mobile   # VITE_MOBILE build + 180 px media from catalogue/media + cap sync
+node scripts/build-site.mjs           # the site and the app, as Netlify builds them, into ./site
 ```
 
 There is no linter/formatter config and no TypeScript; match the existing style by hand.
 
-GitHub (`github.com/DuarteSantos8/openGym`) is the home of the project; `.github/workflows/mirror.yml`
-pushes `main` and `v*` tags to the GitLab mirror (fast-forward only, never push or merge there).
-Pull requests are gated by `.github/workflows/test.yml`; `ios.yml` compiles the iPhone app on a Mac
-runner. Release packages (APK, Play bundle, App Store IPA) are built and signed on the release
-machine, never in CI (see "Exercise media" below and docs/APP_STORES.md).
+GitHub (`github.com/RicardoRibeiro12/serie`) is the home of the project. A push to `main` publishes the
+site and the app on Netlify; `.github/workflows/test.yml` runs the frontend and API tests. Apply any SQL
+change in Supabase before pushing app code that needs it.
 
 ## Architecture
 
@@ -146,15 +135,6 @@ together: `lib/sync-merge.js` and `api/sync-stamps.js` (parity test), `lib/glyph
 `api/queue.js` (mirrored test cases only, nothing compares the code). The other way round,
 `lib/coach-local.js` imports `api/coach/core/` directly so the phones run the same coach pipeline.
 
-### MCP server (`mcp/src`)
-
-Stdio MCP bridge (`@modelcontextprotocol/sdk`) that reads one user's data straight from
-`DATA_DIR`. `state.js` loads and derives the data, `tools.js` defines the read tools (zod schemas),
-`labels.js` maps keys to readable labels, `index.js` wires it together. The one write tool,
-`log_workout` (`write-tools.js`), never writes the file: it builds the workout with
-`frontend/src/lib/log-workout.js` and saves it with `PUT /api/data` over a paired-session token
-(`api-client.js`, `scripts/pair.mjs`), the way a device syncs. See `mcp/README.md`.
-
 ### Passkeys and self-hosting constraints
 
 WebAuthn passkeys are bound to an exact hostname (`RP_ID`) and need HTTPS (localhost excepted).
@@ -162,13 +142,6 @@ Read `docs/SELF_HOSTING.md` before touching auth, session or notification code; 
 env-var contract (`RP_ID`, `ORIGIN`, `PORT`, `WEB_PORT`, `NGINX_PORT`, `BACKEND`, `SESSION_DAYS`,
 `ADMIN_UIDS`, `INVITE_ONLY`, `ALLOW_GUEST`, `AUDIT_*`, `VAPID_SUBJECT`) that real deployments
 depend on.
-
-### Docker / deploy
-
-`docker-compose.yml` has two services, `api` and `web`. The web image builds `frontend/`, copies
-`catalogue/media` into it as `/exercise-media/`, and nginx proxies `/api` to the api (one origin,
-which passkeys require). `web/nginx.conf.template` is rendered from env vars at start
-(`NGINX_PORT`, `BACKEND`, `PORT`), so remapping works against prebuilt images.
 
 ### Exercise media (licence, read before touching media)
 
